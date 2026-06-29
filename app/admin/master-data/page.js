@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import * as XLSX from "xlsx";
 
 export default function MasterData() {
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("mitra"); // 'mitra' | 'kurikulum'
   const [expandedMatkulId, setExpandedMatkulId] = useState(null);
   
@@ -22,6 +24,12 @@ export default function MasterData() {
   
   const [selectedMatkul, setSelectedMatkul] = useState(null);
   const [selectedCPMK, setSelectedCPMK] = useState(null);
+  const [generatingAIId, setGeneratingAIId] = useState(null);
+  
+  // AI Preview Modal State
+  const [showSaranModal, setShowSaranModal] = useState(false);
+  const [saranPreview, setSaranPreview] = useState("");
+  const [saranTarget, setSaranTarget] = useState(null);
   
   // Toast State
   const [toastMessage, setToastMessage] = useState("");
@@ -62,6 +70,64 @@ export default function MasterData() {
       console.error("Gagal mengambil data", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateAI = async (paketId, matkulId, cpmkId) => {
+    setGeneratingAIId(cpmkId);
+    try {
+      const res = await fetch('/api/ai/translate-cpmk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paket_id: paketId, matkul_id: matkulId, cpmk_id: cpmkId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSaranPreview(data.saran_kegiatan);
+        setSaranTarget({ paketId, matkulId, cpmkId });
+        setShowSaranModal(true);
+      } else {
+        showToast("Gagal: " + data.error);
+      }
+    } catch (error) {
+      showToast("Terjadi kesalahan sistem.");
+    } finally {
+      setGeneratingAIId(null);
+    }
+  };
+
+  const handleSaveSaran = async () => {
+    if (!saranTarget) return;
+    try {
+      // Parse saranPreview into array of strings
+      const newIndikators = saranPreview.split('\n')
+        .map(line => line.replace(/^[-*•\d.\s]+/, '').trim())
+        .filter(line => line.length > 5);
+
+      if (newIndikators.length === 0) {
+        return showToast("Tidak ada saran valid untuk disimpan.");
+      }
+
+      const res = await fetch('/api/paket-matkul', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'save_saran', 
+          paketId: saranTarget.paketId, 
+          matkulId: saranTarget.matkulId, 
+          cpmkId: saranTarget.cpmkId,
+          indikators: newIndikators
+        })
+      });
+      if (res.ok) {
+        setShowSaranModal(false);
+        showToast("Saran kegiatan berhasil disimpan!");
+        fetchData();
+      } else {
+        showToast("Gagal menyimpan saran.");
+      }
+    } catch (error) {
+      showToast("Terjadi kesalahan saat menyimpan.");
     }
   };
 
@@ -347,16 +413,17 @@ export default function MasterData() {
 
   const getPetunjukSheet = () => {
     const sheetData = [
-      ["PETUNJUK PENGISIAN FORMAT EXCEL CAPAIAN PEMBELAJARAN"],
+      ["PETUNJUK PENGISIAN FORMAT EXCEL CAPAIAN PEMBELAJARAN (MAGANG BERDAMPAK)"],
       [],
       ["Langkah 1:", "Isi 'Kode Mata Kuliah', 'Nama Mata Kuliah', 'SKS', dan 'Dosen Pengampu' pada baris yang telah disediakan."],
       ["Langkah 2:", "Tentukan CPMK (Capaian Pembelajaran Mata Kuliah)."],
-      ["", "Contoh penulisan baris: CPMK 1: Mahasiswa mampu mengidentifikasi struktur organisasi."],
+      ["", "Contoh penulisan baris: CPMK 1: Mahasiswa mampu mengevaluasi strategi pemasaran digital."],
       ["Langkah 3:", "Di bawah CPMK, berikan baris bertuliskan 'Indikator:'."],
       ["Langkah 4:", "Di bawah baris 'Indikator:', jabarkan 3-5 Indikator (Aktivitas Nyata di lapangan) yang harus dicapai mahasiswa."],
-      ["", "Penulisan bebas menggunakan angka (1, 2, 3), tanda strip (-), bullet, atau teks biasa."],
-      ["", "Contoh Indikator: 1. Mahasiswa menanyakan ke mentor terkait struktur organisasi."],
-      ["", "                  2. Mahasiswa mengobservasi ruang kerja."],
+      ["", "PENTING: Gunakan bahasa yang mudah dipahami mahasiswa! Semakin spesifik kegiatan di lapangan, semakin mudah AI mencocokkan logbook mahasiswa."],
+      ["", "Contoh Indikator yang BAIK: 1. Membantu membuat konten sosial media."],
+      ["", "                            2. Merekap insight/statistik penjualan di Instagram."],
+      ["", "Contoh Indikator yang BURUK (Terlalu Akademis): 1. Memahami konsep segmentasi pasar."],
       [],
       ["CATATAN:", "Buat Sheet baru untuk setiap Mata Kuliah yang berbeda. Jangan ubah nama Sheet PETUNJUK ini."],
     ];
@@ -538,14 +605,20 @@ export default function MasterData() {
   const currentMitras = mitras.slice(indexOfFirstMitra, indexOfLastMitra);
   const totalPagesMitra = Math.ceil(mitras.length / itemsPerPage);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // ... (inside return statement)
   return (
     <DashboardLayout title="Master Data & OBE">
       
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-24 right-8 bg-green-500 text-slate-800 dark:text-slate-100 px-6 py-3 rounded-xl shadow-lg shadow-green-500/30 z-50 animate-in slide-in-from-right-10 fade-in duration-300 font-bold">
-          {toastMessage}
-        </div>
+      {/* Toast Notification (Portaled) */}
+      {mounted && toastMessage && createPortal(
+        <div style={{ zIndex: 999999 }} className="fixed top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-8 py-3 rounded-2xl shadow-xl shadow-slate-900/20 animate-in slide-in-from-top-10 fade-in duration-300 font-bold border border-slate-700/50 flex items-center gap-3">
+          <span className="text-emerald-400 text-lg">✅</span> {toastMessage}
+        </div>,
+        document.body
       )}
 
       {/* Tabs Navigation */}
@@ -848,19 +921,30 @@ export default function MasterData() {
                                             )}
                                           </div>
 
-                                          <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between gap-2 mt-auto">
-                                            <button 
-                                              onClick={(e) => { e.stopPropagation(); handleDeleteCpmk(mk.paketId, mk.matkulId, c._id); }}
-                                              className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex items-center gap-1"
-                                            >
-                                              Hapus CPMK
-                                            </button>
-                                            <button 
-                                              onClick={(e) => { e.stopPropagation(); setSelectedCPMK({ paketId: mk.paketId, matkulId: mk.matkulId, cpmkId: c._id, nama_cpmk: c.nama_cpmk }); setShowAddIndikatorModal(true); }}
-                                              className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded transition-colors"
-                                            >
-                                              + Indikator
-                                            </button>
+                                          <div className="pt-3 border-t border-slate-100 dark:border-slate-700 mt-auto flex flex-col gap-2">
+                                            <div className="flex justify-between gap-1">
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteCpmk(mk.paketId, mk.matkulId, c._id); }}
+                                                className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                              >
+                                                Hapus
+                                              </button>
+                                              <div className="flex gap-1">
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); handleGenerateAI(mk.paketId, mk.matkulId, c._id); }}
+                                                  disabled={generatingAIId === c._id}
+                                                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[10px] font-bold rounded transition-colors disabled:opacity-50"
+                                                >
+                                                  {generatingAIId === c._id ? "⏳..." : "✨ Saran AI"}
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); setSelectedCPMK({ paketId: mk.paketId, matkulId: mk.matkulId, cpmkId: c._id, nama_cpmk: c.nama_cpmk }); setShowAddIndikatorModal(true); }}
+                                                  className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded transition-colors"
+                                                >
+                                                  + Indikator
+                                                </button>
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
                                       ))}
@@ -882,6 +966,38 @@ export default function MasterData() {
       )}
 
       {/* MODALS */}
+
+      {/* Modal Preview Saran AI */}
+      {mounted && showSaranModal && createPortal(
+        <div style={{ zIndex: 999999 }} className="fixed inset-0 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
+            <div className="px-6 py-5 border-b border-slate-300 dark:border-slate-600 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+              <h3 className="text-lg font-black text-amber-800 dark:text-amber-500 flex items-center gap-2">
+                <span>✨</span> Preview Saran Kegiatan (AI)
+              </h3>
+              <button onClick={() => setShowSaranModal(false)} className="text-slate-500 dark:text-slate-400 hover:text-red-500 font-bold text-xl">&times;</button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-4">
+                Berikut adalah saran kegiatan yang dihasilkan oleh AI. Anda dapat membacanya, merevisinya jika kurang pas, lalu menyimpannya.
+              </p>
+              <textarea 
+                value={saranPreview} 
+                onChange={(e) => setSaranPreview(e.target.value)} 
+                rows="6" 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 bg-amber-50/30 dark:bg-slate-900/50 text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed"
+              ></textarea>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-300 dark:border-slate-600 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowSaranModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+              <button onClick={handleSaveSaran} className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-xl shadow-md transition-colors flex items-center gap-2">
+                Simpan Saran
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Modal Tambah Mitra */}
       {showMitraModal && (

@@ -36,9 +36,12 @@ export async function POST(req) {
           if (cpmk.indikator && cpmk.indikator.length > 0) {
             cpmk.indikator.forEach(ind => {
               allIndicators.push({
+                matkul_kode: mk.kode,
+                matkul_nama: mk.nama,
                 cpmk_id: cpmk._id.toString(),
                 nama_cpmk: cpmk.nama_cpmk,
-                indikator: ind
+                indikator: ind,
+                saran_kegiatan: cpmk.saran_kegiatan || ""
               });
             });
           }
@@ -51,22 +54,22 @@ export async function POST(req) {
     }
 
     // Build Prompt for Gemini
-    const prompt = `Anda adalah evaluator akademik magang yang SANGAT KETAT, KRITIS, dan SKEPTIS.
-Tugas Anda adalah memverifikasi apakah deskripsi kegiatan harian mahasiswa BENAR-BENAR BUKTI NYATA pemenuhan indikator Capaian Pembelajaran (CPMK).
+    const prompt = `Anda adalah Asisten Penilai Magang yang BIJAKSANA dan PENGERTIAN.
+Tugas Anda adalah mencocokkan deskripsi kegiatan harian mahasiswa dengan indikator Capaian Pembelajaran (CPMK). Seringkali bahasa lapangan berbeda dengan bahasa akademik/dosen. Tugas utama Anda adalah mencari "Semantic Matching" (Kesamaan Makna) antara apa yang dikerjakan mahasiswa dengan apa yang ditargetkan indikator.
 
-ATURAN KETAT:
-1. JANGAN BERASUMSI. Jika mahasiswa hanya mengatakan "memperhatikan", "berkenalan", atau "berkeliling", itu SANGAT JAUH dan TIDAK SAMA dengan "menganalisis", "mencatat kelemahan", atau "mengevaluasi".
-2. Indikator HANYA boleh dianggap tercapai jika tindakan dalam deskripsi secara EKSPLISIT, DETAIL, dan SUBSTANSIAL menunjukkan pencapaian tersebut.
-3. Lebih baik mengembalikan array kosong [] daripada meloloskan kegiatan sepele untuk indikator yang berbobot berat.
-4. Jangan tertipu oleh kemiripan kata. Fokus pada esensi 'Action' (Tindakan) dan 'Result' (Hasil) dari deskripsi mahasiswa.
+PANDUAN PENILAIAN FLEKSIBEL:
+1. CARI BENANG MERAH MAKNA: Jika mahasiswa "ngobrol", "meeting", "berkenalan", "duduk di ruang rapat", ini bisa dihubungkan ke indikator yang berkaitan dengan "komunikasi", "koordinasi", atau "observasi budaya/struktur organisasi". 
+2. BERIKAN REWARD: Jangan kaku! Mahasiswa sedang belajar. Kegiatan sederhana seperti "keliling kantor" atau "orientasi divisi" sangat berharga dan bisa dimasukkan ke dalam kategori "observasi alur kerja" atau "identifikasi masalah".
+3. JIKA ADA SARAN KEGIATAN: Indikator mungkin dilengkapi dengan [Saran Kegiatan]. Jadikan saran ini sebagai pedoman. Jika kegiatan mahasiswa mirip dengan saran tersebut, langsung loloskan!
+4. EVALUASI POSITIF: Usahakan sebisa mungkin untuk mencarikan minimal 1 indikator yang paling relevan untuk menghargai usaha mahasiswa, kecuali kegiatannya benar-benar sangat tidak berhubungan (misal: "saya tidur seharian").
 
 DAFTAR INDIKATOR:
-${allIndicators.map((ind, i) => `[ID: ${i}] CPMK: ${ind.nama_cpmk} | Indikator: ${ind.indikator}`).join('\n')}
+${allIndicators.map((ind, i) => `[ID: ${i}] CPMK: ${ind.nama_cpmk} | Indikator Utama: ${ind.indikator} ${ind.saran_kegiatan ? `| Saran Kegiatan (Bahasa Lapangan): ${ind.saran_kegiatan}` : ''}`).join('\n')}
 
-DESKRIPSI KEGIATAN MAHASISWA:
+DESKRIPSI KEGIATAN MAHASISWA (Bahasa Lapangan):
 "${deskripsi_kegiatan}"
 
-Keluarkan hasil analisis Anda HANYA dalam format JSON valid berupa array angka ID indikator yang cocok. 
+Keluarkan hasil analisis Anda HANYA dalam format JSON valid berupa array angka ID indikator yang cocok secara semantik. 
 Contoh output jika cocok dengan ID 1 dan 3: [1, 3]
 Contoh output jika tidak ada yang cocok: []
 Jangan tambahkan teks apapun selain array JSON tersebut.`;

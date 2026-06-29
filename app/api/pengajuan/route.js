@@ -28,7 +28,7 @@ export async function POST(req) {
           posisi: formData.get('posisi_nama') || 'Posisi Magang'
         },
         tanggal_mulai: new Date(),
-        tanggal_selesai: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+        tanggal_selesai: new Date(new Date().setMonth(new Date().getMonth() + 4)),
       };
 
       const file_cv = formData.get('file_cv') || formData.get('file');

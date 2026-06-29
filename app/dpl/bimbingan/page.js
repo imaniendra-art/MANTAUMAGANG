@@ -113,6 +113,7 @@ export default function DaftarBimbinganPage() {
                     <th className="px-6 py-4">Mahasiswa</th>
                     <th className="px-6 py-4">Lokasi Magang</th>
                     <th className="px-6 py-4">Mentor Lapangan</th>
+                    <th className="px-6 py-4">Waktu Penarikan</th>
                     <th className="px-6 py-4 text-center">Status / Aksi</th>
                   </tr>
                 </thead>
@@ -161,11 +162,27 @@ export default function DaftarBimbinganPage() {
                             </button>
                           )}
                         </td>
+                        <td className="px-6 py-4">
+                          {item.is_dpl_confirmed && item.tanggal_selesai ? (
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-800 dark:text-slate-100">
+                                {new Date(item.tanggal_selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </span>
+                              <span className="text-[10px] text-slate-500 mt-0.5">
+                                Mulai: {new Date(item.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Belum diserahkan</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 align-middle text-center">
                           {item.is_dpl_confirmed ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-500/30">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Terkonfirmasi
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-500/30">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Terkonfirmasi
+                              </span>
+                            </div>
                           ) : (
                             <div className="flex flex-col items-center gap-2">
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 text-[10px] font-bold rounded-full">

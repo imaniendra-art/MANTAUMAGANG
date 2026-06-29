@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const CpmkSchema = new mongoose.Schema({
   nama_cpmk: { type: String, required: true },
   indikator: [{ type: String }],
+  saran_kegiatan: { type: String, default: "" },
 });
 
 const MatkulSchema = new mongoose.Schema({

@@ -12,13 +12,40 @@ export default function LogbookPage() {
   const [loading, setLoading] = useState(true);
   
   // Form State
+  const getTodayLocal = () => {
+    if (typeof window === 'undefined') return "";
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    return (new Date(today - tzOffset)).toISOString().split('T')[0];
+  };
+  
   const [tanggal, setTanggal] = useState("");
+  const [absensiSelected, setAbsensiSelected] = useState(null);
+  
+  // Set default date on mount
+  useEffect(() => {
+    setTanggal(getTodayLocal());
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.id && tanggal) {
+      fetch(`/api/absensi?mhsId=${session.user.id}&tanggal=${tanggal}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) setAbsensiSelected(data[0]);
+          else setAbsensiSelected(null);
+        })
+        .catch(console.error);
+    }
+  }, [session, tanggal]);
+
   const [deskripsi, setDeskripsi] = useState("");
   const [buktiLink, setBuktiLink] = useState("");
   const [buktiFoto, setBuktiFoto] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [achievementToast, setAchievementToast] = useState(null);
+  const [showMisi, setShowMisi] = useState(false); // State for Accordion Misi Magang
 
   const fetchData = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -190,8 +217,62 @@ export default function LogbookPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* KIRI: Form Pengisian */}
-          <div className="lg:col-span-5">
+          {/* KIRI: Form Pengisian & Misi Magang */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            
+            {/* Panel Misi Magang */}
+            {pengajuan.paket_matkul_id && (
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div 
+                  className="p-5 flex justify-between items-center cursor-pointer bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-colors"
+                  onClick={() => setShowMisi(!showMisi)}
+                >
+                  <div>
+                    <h3 className="text-sm font-black text-indigo-900 flex items-center gap-2">
+                      <span>✨</span> Peta Perjalanan Magang Berdampakmu
+                    </h3>
+                    <p className="text-[10px] font-bold text-indigo-700/70 mt-0.5">Lihat apa yang diharapkan kampus dari pengalaman berhargamu di sini.</p>
+                  </div>
+                  <div className={`w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-indigo-400 font-bold transition-transform duration-300 ${showMisi ? 'rotate-180' : ''}`}>
+                    ▼
+                  </div>
+                </div>
+                
+                {showMisi && (
+                  <div className="p-5 border-t border-indigo-100/50 space-y-5 animate-in slide-in-from-top-2 fade-in duration-300 max-h-[500px] overflow-y-auto custom-scrollbar bg-indigo-50/10">
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl shadow-sm text-white">
+                      <p className="text-[11px] leading-relaxed font-medium">
+                        Halo! Magang ini bukan sekadar rutinitas, tapi petualangan untuk membentuk karakter dan *skill* profesionalmu. Setiap cerita hebat yang kamu tulis di logbook akan dinilai oleh AI kami untuk mencocokkan pengalamanmu dengan target pencapaian (CPMK) di bawah ini. Semangat berkarya! 🚀
+                      </p>
+                    </div>
+                    
+                    {pengajuan.paket_matkul_id.mata_kuliah?.map((mk, idx) => (
+                      <div key={idx} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="px-2.5 py-1 rounded-md text-[10px] font-black bg-indigo-100 text-indigo-700 uppercase tracking-widest">{mk.kode}</span>
+                          <span className="text-sm font-black text-slate-800">{mk.nama}</span>
+                        </div>
+                        <div className="space-y-3">
+                          {mk.cpmk?.map((c, i) => (
+                            <div key={i} className="pl-3 border-l-2 border-indigo-200">
+                              <p className="font-bold text-slate-700 text-xs leading-snug">{c.nama_cpmk}</p>
+                              {c.saran_kegiatan && (
+                                <div className="mt-2 p-2.5 bg-amber-50/50 rounded-xl border border-amber-100/50">
+                                  <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider block mb-1">💡 Ide Aksi di Lapangan:</span>
+                                  <span className="text-amber-800 font-medium text-[11px] leading-relaxed block">{c.saran_kegiatan}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Form Pengisian */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden sticky top-28">
               <div className="p-6 border-b border-slate-100 bg-indigo-50/30">
                 <h3 className="text-lg font-bold text-slate-900">Tulis Logbook Baru</h3>
@@ -201,6 +282,18 @@ export default function LogbookPage() {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Tanggal Kegiatan</label>
                   <input required value={tanggal} onChange={(e) => setTanggal(e.target.value)} type="date" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 bg-slate-50 font-medium" />
+                  
+                  {tanggal && absensiSelected && (
+                    <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex gap-3 items-start animate-in fade-in">
+                      <span className="text-emerald-500 shrink-0">✅</span>
+                      <div className="text-xs text-emerald-700 font-medium leading-relaxed">
+                        <strong>Check-In Tercatat: {absensiSelected.status.toUpperCase()}</strong>
+                        {absensiSelected.status === 'hadir' && absensiSelected.rencana_kegiatan && (
+                          <p className="mt-1 opacity-80 line-clamp-2">Target hari ini: {absensiSelected.rencana_kegiatan}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">Deskripsi Kegiatan</label>
@@ -264,7 +357,10 @@ export default function LogbookPage() {
                             <div key={i} className="flex gap-2 items-start mb-1">
                               <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded shrink-0">CPMK Terpenuhi</span>
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs text-slate-700 font-bold bg-slate-100 px-2 py-1 rounded break-words">{ind.nama_cpmk}</p>
+                                <p className="text-xs text-slate-700 font-bold bg-slate-100 px-2 py-1 rounded break-words">
+                                  {ind.matkul_nama ? <span className="text-indigo-600 mr-1">[{ind.matkul_kode} {ind.matkul_nama}]</span> : null}
+                                  {ind.nama_cpmk}
+                                </p>
                                 <p className="text-xs text-slate-500 mt-1 italic break-words">&quot;{ind.indikator}&quot;</p>
                               </div>
                             </div>

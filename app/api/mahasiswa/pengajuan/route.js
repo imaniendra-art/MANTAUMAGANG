@@ -69,7 +69,7 @@ export async function POST(req) {
         posisi: posisi_nama || 'Posisi Magang'
       },
       tanggal_mulai: new Date(),
-      tanggal_selesai: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+      tanggal_selesai: new Date(new Date().setMonth(new Date().getMonth() + 4)),
       status_pengajuan: 'menunggu',
       tanggal_pengajuan: new Date()
     });

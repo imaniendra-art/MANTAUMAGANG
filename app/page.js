@@ -3,8 +3,17 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import LandingMitraList from '@/components/LandingMitraList';
+import { useSession } from 'next-auth/react';
 
 export default function Home() {
+  const { data: session, status } = useSession();
+
+  const getDashboardUrl = () => {
+    if (!session) return '/login';
+    if (session.user.role === 'admin_prodi') return '/admin';
+    return `/${session.user.role}`;
+  };
+
   return (
     <main className="bg-slate-50 text-slate-800 font-sans antialiased bg-light-grid min-h-screen">
       
@@ -26,11 +35,11 @@ export default function Home() {
           <button 
             onClick={() => {
               localStorage.removeItem('target_magang');
-              window.location.href = '/login';
+              window.location.href = getDashboardUrl();
             }}
             className="px-6 py-2 rounded-full bg-white text-slate-900 font-bold hover:bg-slate-100 transition-all shadow-lg shadow-white/10"
           >
-            Login Sistem
+            {status === 'authenticated' ? 'Ke Dashboard' : 'Login Sistem'}
           </button>
         </nav>
 
@@ -51,11 +60,11 @@ export default function Home() {
               <button 
                 onClick={() => {
                   localStorage.removeItem('target_magang');
-                  window.location.href = '/login';
+                  window.location.href = getDashboardUrl();
                 }} 
                 className="px-8 py-3.5 rounded-lg bg-blue-500 hover:bg-blue-400 text-slate-900 font-bold text-lg transition-all shadow-lg shadow-blue-500/30"
               >
-                Cari Posisi
+                {status === 'authenticated' ? 'Cari Posisi' : 'Cari Posisi'}
               </button>
               <button className="px-8 py-3.5 rounded-lg border-2 border-slate-500 hover:bg-slate-800 text-slate-100 font-bold text-lg transition-all">
                 Pelajari Alur

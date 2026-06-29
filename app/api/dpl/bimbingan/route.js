@@ -45,12 +45,20 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { pengajuanId } = await req.json();
+    const pengajuanId = (await req.json()).pengajuanId;
     if (!pengajuanId) return NextResponse.json({ error: "Missing pengajuanId" }, { status: 400 });
+
+    const tanggalMulai = new Date();
+    const tanggalSelesai = new Date();
+    tanggalSelesai.setMonth(tanggalSelesai.getMonth() + 4);
 
     const pengajuan = await PengajuanMagang.findOneAndUpdate(
       { _id: pengajuanId, dpl_id: session.user.id },
-      { is_dpl_confirmed: true },
+      { 
+        is_dpl_confirmed: true,
+        tanggal_mulai: tanggalMulai,
+        tanggal_selesai: tanggalSelesai
+      },
       { new: true }
     );
 

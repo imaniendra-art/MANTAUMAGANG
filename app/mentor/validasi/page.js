@@ -70,8 +70,8 @@ export default function MentorValidasi() {
   return (
     <DashboardLayout title="Validasi Faktual (Mentor)">
       {toastMessage && (
-        <div className="fixed top-24 right-8 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-6 py-3 rounded-xl shadow-lg z-50 animate-in slide-in-from-right-10 fade-in duration-300 font-bold backdrop-blur-sm">
-          {toastMessage}
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-8 py-3.5 rounded-full shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-300 font-bold flex items-center gap-2.5 border border-emerald-500">
+          <span>✅</span> {toastMessage}
         </div>
       )}
 
@@ -113,11 +113,11 @@ export default function MentorValidasi() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm font-bold">
-                    <th className="py-4 px-6">Mahasiswa & Tgl</th>
+                  <tr className="bg-slate-50 dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <th className="py-4 px-6 whitespace-nowrap w-48">Mahasiswa & Tgl</th>
                     <th className="py-4 px-6">Deskripsi Kegiatan</th>
-                    <th className="py-4 px-6">Bukti</th>
-                    <th className="py-4 px-6 text-right w-48">{activeTab === 'antrean' ? 'Aksi' : 'Status Terakhir'}</th>
+                    <th className="py-4 px-6 text-center w-32">Bukti</th>
+                    <th className="py-4 px-6 text-right w-64">{activeTab === 'antrean' ? 'Aksi' : 'Status Terakhir'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
@@ -131,70 +131,87 @@ export default function MentorValidasi() {
                   ) : (
                     logbooks.filter(log => activeTab === 'antrean' ? log.status_validasi === 'menunggu_mentor' : log.status_validasi !== 'menunggu_mentor').map((log) => (
                       <tr key={log._id} className="hover:bg-white dark:bg-slate-800 shadow-sm transition-colors">
-                        <td className="py-4 px-6">
-                          <p className="font-bold text-slate-800 dark:text-slate-100">{log.mahasiswa_id?.nama_lengkap}</p>
-                          <p className="text-xs font-semibold text-slate-500 mt-0.5">{new Date(log.tanggal).toLocaleDateString('id-ID')}</p>
+                        <td className="py-5 px-6 align-top">
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{log.mahasiswa_id?.nama_lengkap}</p>
+                          <p className="text-xs font-semibold text-slate-500 mt-1 bg-slate-100 dark:bg-slate-800 w-fit px-2 py-1 rounded-md">{new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</p>
                         </td>
-                        <td className="py-4 px-6">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed mb-3">{log.deskripsi_kegiatan}</p>
-                          {log.matched_indicators && log.matched_indicators.length > 0 ? (
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 border border-indigo-100 dark:border-indigo-800/50">
-                              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                <span>🤖</span> Temuan AI: {log.matched_indicators.length} Target Terpenuhi
-                              </p>
-                              <div className="space-y-2">
-                                {log.matched_indicators.map((ind, idx) => (
-                                  <div key={idx} className="flex gap-2">
-                                    <div className="text-indigo-400 text-xs mt-0.5">⭐</div>
-                                    <div>
-                                      <p className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 bg-white dark:bg-indigo-950/50 px-1.5 py-0.5 rounded shadow-sm inline-block mb-0.5">{ind.nama_cpmk}</p>
-                                      <p className="text-[11px] text-indigo-600 dark:text-indigo-300 font-medium leading-snug">{ind.indikator}</p>
-                                    </div>
+                        <td className="py-5 px-6 align-top">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed">{log.deskripsi_kegiatan}</p>
+                          <details className="mt-4 group">
+                            <summary className="cursor-pointer text-[11px] font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 select-none flex items-center gap-1.5 w-fit bg-indigo-50/50 hover:bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-full transition-colors border border-indigo-100 dark:border-indigo-800/30">
+                              <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
+                              Lihat Capaian Target CPMK
+                            </summary>
+                            <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                              {log.matched_indicators && log.matched_indicators.length > 0 ? (
+                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                  <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                    <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi
+                                  </p>
+                                  <div className="space-y-3">
+                                    {log.matched_indicators.map((ind, idx) => (
+                                      <div key={idx} className="flex gap-2.5 items-start">
+                                        <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
+                                        <div>
+                                          <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">{ind.nama_cpmk}</p>
+                                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
+                                </div>
+                              ) : (
+                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start">
+                                  <span className="text-amber-500">💡</span>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-0.5">
+                                      Tidak Memenuhi Target CPMK
+                                    </p>
+                                    <p className="text-[11px] text-amber-600 dark:text-amber-400/80 leading-relaxed mt-1">Kegiatan ini bersifat rutinitas. Mohon arahkan mahasiswa untuk melakukan variasi tugas lain agar target magang tercapai.</p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
-                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <span>🤖</span> AI Tidak Menemukan Target
-                              </p>
-                              <p className="text-[11px] text-slate-400 mt-1">Rutinitas biasa, tidak ada poin kurikulum.</p>
-                            </div>
-                          )}
+                          </details>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6 align-top text-center">
                           {log.bukti_kegiatan ? (
-                            <a href={log.bukti_kegiatan} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-400 hover:underline bg-blue-500/20 px-2 py-1 rounded border border-blue-500/30">Lihat Bukti</a>
+                            <a href={log.bukti_kegiatan} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm">
+                              <span>🖼️</span> Lihat Bukti
+                            </a>
                           ) : (
-                            <span className="text-xs text-slate-500 italic">Tidak ada</span>
+                            <span className="text-xs text-slate-400 italic bg-slate-50 px-2 py-1 rounded-md border border-slate-100">Tidak ada bukti</span>
                           )}
                         </td>
-                        <td className="py-4 px-6 text-right space-x-2 whitespace-nowrap">
+                        <td className="py-5 px-6 align-top text-right">
                           {activeTab === 'antrean' ? (
-                            <>
+                            <div className="flex flex-col xl:flex-row justify-end gap-2">
                               <button 
                                 onClick={() => handleValidasi(log._id, 'revisi')}
-                                className="px-3 py-1.5 border border-red-500/30 text-red-400 hover:bg-red-500/20 font-bold text-xs rounded-lg transition-colors"
+                                className="px-4 py-2 border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap"
                               >
                                 Minta Revisi
                               </button>
                               <button 
                                 onClick={() => handleValidasi(log._id, 'divalidasi_mentor')}
-                                className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-600 hover:text-white font-bold text-xs rounded-lg transition-colors border border-emerald-500/30"
+                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap"
                               >
                                 Validasi Faktanya
                               </button>
-                            </>
+                            </div>
                           ) : (
-                            <>
+                            <div className="flex justify-end">
                               {log.status_validasi === 'revisi' && (
-                                <span className="text-xs font-bold text-red-500 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200">❌ Diminta Revisi</span>
+                                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 shadow-sm inline-flex items-center gap-1.5">
+                                  <span>❌</span> Diminta Revisi
+                                </span>
                               )}
                               {(log.status_validasi === 'divalidasi_mentor' || log.status_validasi === 'divalidasi_dpl') && (
-                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">✅ Divalidasi Lapangan</span>
+                                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm inline-flex items-center gap-1.5">
+                                  <span>✅</span> Divalidasi Lapangan
+                                </span>
                               )}
-                            </>
+                            </div>
                           )}
                         </td>
                       </tr>

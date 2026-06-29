@@ -241,7 +241,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
         </header>
 
         {/* Sub-page Content */}
-        <main className="relative z-10 w-full px-8 lg:px-[5cm] py-8">
+        <main className="relative w-full px-8 lg:px-[5cm] py-8">
           <div className="w-full">
             {children}
           </div>

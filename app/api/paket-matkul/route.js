@@ -404,6 +404,33 @@ export async function POST(req) {
       
       return NextResponse.json(paket);
     }
+
+    if (data.action === 'save_saran') {
+      const { paketId, matkulId, cpmkId, indikators } = data;
+      const paket = await PaketMatkul.findById(paketId);
+      if (!paket) throw new Error("Paket tidak ditemukan");
+      
+      const matkul = paket.mata_kuliah.id(matkulId);
+      if (!matkul) throw new Error("Mata kuliah tidak ditemukan");
+      
+      const cpmk = matkul.cpmk.id(cpmkId);
+      if (!cpmk) throw new Error("CPMK tidak ditemukan");
+      
+      // Append only unique new indicators
+      if (Array.isArray(indikators)) {
+        for (const ind of indikators) {
+          const trimmed = ind.trim();
+          if (trimmed && !cpmk.indikator.some(existing => existing.toLowerCase() === trimmed.toLowerCase())) {
+            cpmk.indikator.push(trimmed);
+          }
+        }
+      }
+      
+      paket.markModified('mata_kuliah');
+      await paket.save();
+      
+      return NextResponse.json(paket);
+    }
     
     const newPaket = await PaketMatkul.create(data);
     return NextResponse.json(newPaket, { status: 201 });
