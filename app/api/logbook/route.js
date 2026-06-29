@@ -27,14 +27,22 @@ export async function GET(req) {
       return NextResponse.json(logs);
     }
 
+    // Mentor Histori: Tarik semua logbook yang sudah tidak pending (riwayat)
+    if (role === 'mentor_histori') {
+      const logs = await Logbook.find({ status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl', 'revisi'] } })
+        .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
+        .populate({ path: 'pengajuan_id', select: 'detail_tempat' })
+        .sort({ tanggal: -1 });
+      return NextResponse.json(logs);
+    }
+
     // DPL: Tarik logbook yang sudah di-acc mentor, KHUSUS untuk mhs bimbingannya
     if (role === 'dpl' && userId) {
       const pengajuans = await PengajuanMagang.find({ dpl_id: userId }).select('_id');
       const pengajuanIds = pengajuans.map(p => p._id);
 
       const logs = await Logbook.find({ 
-        pengajuan_id: { $in: pengajuanIds },
-        status_validasi: 'divalidasi_mentor' 
+        pengajuan_id: { $in: pengajuanIds }
       })
       .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
       .sort({ tanggal: 1 });
@@ -70,8 +78,11 @@ export async function PATCH(req) {
     }
     
     let updateData = { status_validasi };
-    if (status_validasi === 'divalidasi_dpl') {
-      updateData.nilai_otomatis = Math.floor(Math.random() * (100 - 80 + 1)) + 80;
+    if (status_validasi === 'divalidasi_mentor') {
+      const logbook = await Logbook.findById(id);
+      if (logbook && logbook.matched_indicators) {
+        updateData.nilai_otomatis = logbook.matched_indicators.length * 10; // 10 poin per indikator
+      }
     }
     
     const updated = await Logbook.findByIdAndUpdate(

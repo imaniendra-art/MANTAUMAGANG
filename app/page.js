@@ -77,7 +77,7 @@ export default function Home() {
             <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
               <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none group-hover:text-blue-500 group-hover:opacity-10 transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-12">🎓</div>
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-- to-- text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🎓</div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🎓</div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-4">Bagi Mahasiswa</h3>
                 <p className="text-slate-600 text-base leading-relaxed">Mendapatkan pengalaman nyata di dunia industri, mengembangkan soft skill, dan membangun portofolio profesional sebelum lulus.</p>
               </div>
@@ -87,7 +87,7 @@ export default function Home() {
             <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
               <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none group-hover:text-blue-500 group-hover:opacity-10 transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-12">🏛️</div>
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-- to-- text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🏛️</div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🏛️</div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-4">Bagi Kampus</h3>
                 <p className="text-slate-600 text-base leading-relaxed">Memperluas jaringan kemitraan institusi, memastikan relevansi kurikulum dengan kebutuhan industri, dan memperkuat data lulusan.</p>
               </div>
@@ -97,7 +97,7 @@ export default function Home() {
             <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
               <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none group-hover:text-blue-500 group-hover:opacity-10 transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-12">🎯</div>
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-- to-- text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🎯</div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🎯</div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-4">Implementasi OBE</h3>
                 <p className="text-slate-600 text-base leading-relaxed">Mendukung Outcome-Based Education melalui konversi SKS yang terukur berdasarkan capaian kinerja mahasiswa di lapangan.</p>
               </div>

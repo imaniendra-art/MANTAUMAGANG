@@ -394,6 +394,17 @@ export async function POST(req) {
       return NextResponse.json(paket);
     }
     
+    if (data.action === 'batch_import') {
+      const { paketId, mata_kuliah_list } = data;
+      const paket = await PaketMatkul.findById(paketId);
+      if (!paket) throw new Error("Paket tidak ditemukan");
+      
+      paket.mata_kuliah.push(...mata_kuliah_list);
+      await paket.save();
+      
+      return NextResponse.json(paket);
+    }
+    
     const newPaket = await PaketMatkul.create(data);
     return NextResponse.json(newPaket, { status: 201 });
   } catch (error) {

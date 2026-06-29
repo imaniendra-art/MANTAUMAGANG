@@ -100,7 +100,7 @@ export default function MahasiswaLaporan() {
           </div>
         </div>
       ) : (
-        <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
+        <div className="space-y-6">
           
           <div className="flex gap-4 mb-8 no-print">
             <button onClick={handlePrint} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-slate-800 dark:text-slate-100 font-bold rounded-xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2">

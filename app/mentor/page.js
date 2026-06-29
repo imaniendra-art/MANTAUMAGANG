@@ -41,7 +41,7 @@ export default function MentorDashboard() {
       {stats.pendingLogbooks > 0 ? (
         <div className="relative bg-gradient-to-br from-cyan-500/10 to-blue-500/5 p-6 rounded-2xl border border-cyan-400/20 flex items-center gap-5 overflow-hidden">
           <div className="absolute -right-2 -bottom-2 text-7xl opacity-[0.06] pointer-events-none">📋</div>
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-- to-- text-white shadow-lg shadow-cyan-500/20 flex items-center justify-center text-2xl shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/20 flex items-center justify-center text-2xl shrink-0">
             📝
           </div>
           <div className="relative z-10">
@@ -51,7 +51,7 @@ export default function MentorDashboard() {
         </div>
       ) : (
         <div className="bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none p-6 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-- to-- text-white shadow-lg shadow-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
             ✅
           </div>
           <div>

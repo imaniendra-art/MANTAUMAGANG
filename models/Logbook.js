@@ -19,11 +19,15 @@ const LogbookSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  indikator_id: {
+  matched_indicators: [{
+    cpmk_id: String,
+    nama_cpmk: String,
+    indikator: String
+  }],
+  bukti_kegiatan: { // untuk foto
     type: String,
-    required: true,
   },
-  bukti_kegiatan: {
+  bukti_link: { // untuk link (gdrive, figma, dll)
     type: String,
   },
   nilai_otomatis: {
@@ -37,4 +41,5 @@ const LogbookSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+delete mongoose.models.Logbook;
 export default mongoose.models.Logbook || mongoose.model('Logbook', LogbookSchema);

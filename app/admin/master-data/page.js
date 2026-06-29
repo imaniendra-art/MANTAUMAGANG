@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import * as XLSX from "xlsx";
 
 export default function MasterData() {
   const [activeTab, setActiveTab] = useState("mitra"); // 'mitra' | 'kurikulum'
+  const [expandedMatkulId, setExpandedMatkulId] = useState(null);
   
   // Data State
   const [mitras, setMitras] = useState([]);
@@ -343,6 +345,193 @@ export default function MasterData() {
     (paket.mata_kuliah || []).map(mk => ({ ...mk, paketId: paket._id, matkulId: mk._id }))
   );
 
+  const getPetunjukSheet = () => {
+    const sheetData = [
+      ["PETUNJUK PENGISIAN FORMAT EXCEL CAPAIAN PEMBELAJARAN"],
+      [],
+      ["Langkah 1:", "Isi 'Kode Mata Kuliah', 'Nama Mata Kuliah', 'SKS', dan 'Dosen Pengampu' pada baris yang telah disediakan."],
+      ["Langkah 2:", "Tentukan CPMK (Capaian Pembelajaran Mata Kuliah)."],
+      ["", "Contoh penulisan baris: CPMK 1: Mahasiswa mampu mengidentifikasi struktur organisasi."],
+      ["Langkah 3:", "Di bawah CPMK, berikan baris bertuliskan 'Indikator:'."],
+      ["Langkah 4:", "Di bawah baris 'Indikator:', jabarkan 3-5 Indikator (Aktivitas Nyata di lapangan) yang harus dicapai mahasiswa."],
+      ["", "Penulisan bebas menggunakan angka (1, 2, 3), tanda strip (-), bullet, atau teks biasa."],
+      ["", "Contoh Indikator: 1. Mahasiswa menanyakan ke mentor terkait struktur organisasi."],
+      ["", "                  2. Mahasiswa mengobservasi ruang kerja."],
+      [],
+      ["CATATAN:", "Buat Sheet baru untuk setiap Mata Kuliah yang berbeda. Jangan ubah nama Sheet PETUNJUK ini."],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    ws['!cols'] = [{ wch: 15 }, { wch: 100 }];
+    return ws;
+  };
+
+  const handleExportExcel = () => {
+    if (!allMatkuls || allMatkuls.length === 0) {
+      return showToast("Tidak ada data mata kuliah untuk diexport!");
+    }
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, getPetunjukSheet(), "PETUNJUK");
+    
+    allMatkuls.forEach((mk) => {
+      const sheetData = [];
+      
+      sheetData.push(["Kode Mata Kuliah", mk.kode]);
+      sheetData.push(["Nama Mata Kuliah", mk.nama]);
+      sheetData.push(["SKS", mk.sks]);
+      sheetData.push(["Dosen Pengampu", mk.dosen_pengampu || ""]);
+      sheetData.push([]);
+      
+      if (mk.cpmk && mk.cpmk.length > 0) {
+        mk.cpmk.forEach((cpmk, index) => {
+          let cpmkText = cpmk.nama_cpmk;
+          if (!cpmkText.toUpperCase().startsWith("CPMK")) {
+            cpmkText = `CPMK ${index + 1}: ${cpmkText}`;
+          }
+          sheetData.push([cpmkText]);
+          sheetData.push(["Indikator:"]);
+          
+          if (cpmk.indikator && cpmk.indikator.length > 0) {
+            cpmk.indikator.forEach((ind, i) => {
+              sheetData.push(["", `${i+1}. ${ind}`]);
+            });
+          } else {
+            sheetData.push(["", "(Belum ada indikator)"]);
+          }
+          sheetData.push([]);
+        });
+      } else {
+        sheetData.push(["(Belum ada CPMK)"]);
+      }
+      
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      
+      // Auto-size columns slightly
+      ws['!cols'] = [{ wch: 40 }, { wch: 80 }];
+      
+      let sheetName = mk.kode ? mk.kode.toString().replace(/[?*/\[\]\\]/g, "") : `MK_${mk.matkulId.substring(0,6)}`;
+      sheetName = sheetName.substring(0, 31);
+      
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+    
+    XLSX.writeFile(wb, "DAFTAR MATKUL DI KONVERSI.xlsx");
+  };
+
+  const handleDownloadTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, getPetunjukSheet(), "PETUNJUK");
+    
+    const templateData = [
+      ["Kode Mata Kuliah", "MK.001"],
+      ["Nama Mata Kuliah", "Contoh Mata Kuliah"],
+      ["SKS", 3],
+      ["Dosen Pengampu", ""],
+      [],
+      ["CPMK 1: Mahasiswa mampu melakukan analisis dasar."],
+      ["Indikator:"],
+      ["", "1. Mahasiswa mengumpulkan data lapangan."],
+      ["", "2. Mahasiswa menyusun laporan mingguan."],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    ws['!cols'] = [{ wch: 40 }, { wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, ws, "MK.001");
+    
+    XLSX.writeFile(wb, "Template_Kurikulum.xlsx");
+  };
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const paketId = pakets[0]?._id;
+    if (!paketId) {
+      e.target.value = null;
+      return showToast("Paket utama tidak ditemukan, silakan buat paket terlebih dahulu!");
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        
+        const mata_kuliah_list = [];
+        
+        wb.SheetNames.forEach(sheetName => {
+          if (sheetName.toUpperCase() === "PETUNJUK") return;
+          
+          const ws = wb.Sheets[sheetName];
+          const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          
+          let kode = sheetName;
+          let nama = "Mata Kuliah Baru";
+          let sks = 2;
+          let dosen_pengampu = "";
+          const cpmkList = [];
+          
+          let currentCpmk = null;
+          
+          data.forEach(row => {
+            if (!row || row.length === 0) return;
+            const col1 = row[0] ? row[0].toString().trim() : "";
+            const col2 = row[1] ? row[1].toString().trim() : "";
+            
+            if (col1.toLowerCase() === "kode mata kuliah" && col2) kode = col2;
+            else if (col1.toLowerCase() === "nama mata kuliah" && col2) nama = col2;
+            else if (col1.toLowerCase() === "sks" && col2) sks = Number(col2) || 2;
+            else if (col1.toLowerCase() === "dosen pengampu" && col2) dosen_pengampu = col2;
+            else if (col1.toUpperCase().startsWith("CPMK")) {
+              currentCpmk = { nama_cpmk: col1, indikator: [] };
+              cpmkList.push(currentCpmk);
+            }
+            else if (col1.toLowerCase() === "indikator:" || col1.toLowerCase() === "indikator" || col1.toLowerCase() === "indikator :") {
+              // Abaikan header indikator
+            }
+            else if (currentCpmk) {
+              // Ambil teks apapun yang ada di kolom 1 atau kolom 2 setelah CPMK ditemukan (kecuali header)
+              let text = col2 || col1;
+              if (text && text.length > 4) {
+                // Bersihkan prefix umum seperti "-> ", "- ", "* ", "1. ", "1) ", dll.
+                text = text.replace(/^(\s*(->|=>|-|\*|\d+[\.\)]|\u2022)\s*)+/g, "").trim();
+                if (text) currentCpmk.indikator.push(text);
+              }
+            }
+          });
+          
+          mata_kuliah_list.push({ kode, nama, sks, dosen_pengampu, cpmk: cpmkList });
+        });
+        
+        if (mata_kuliah_list.length === 0) {
+          e.target.value = null;
+          return showToast("Tidak ada data mata kuliah valid yang ditemukan di file!");
+        }
+
+        const res = await fetch('/api/paket-matkul', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'batch_import',
+            paketId,
+            mata_kuliah_list
+          })
+        });
+        
+        if (res.ok) {
+          showToast(`Berhasil mengimpor ${mata_kuliah_list.length} Mata Kuliah!`);
+          fetchData();
+        } else {
+          showToast("Gagal mengimpor data");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Terjadi kesalahan saat memproses file Excel.");
+      }
+      e.target.value = null;
+    };
+    reader.readAsBinaryString(file);
+  };
+
   // Pagination Calculations
   const indexOfLastMitra = currentPageMitra * itemsPerPage;
   const indexOfFirstMitra = indexOfLastMitra - itemsPerPage;
@@ -389,7 +578,7 @@ export default function MasterData() {
         <>
           {/* Tab 1: Mitra Tempat Magang */}
           {activeTab === "mitra" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-6">
               <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div>
                   <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Daftar Instansi / Mitra Magang</h2>
@@ -497,124 +686,195 @@ export default function MasterData() {
 
           {/* Tab 2: Kurikulum Konversi OBE */}
           {activeTab === "kurikulum" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-6">
               <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div>
                   <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Master Data Capaian Pembelajaran</h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola indikator penilaian logbook mahasiswa untuk konversi SKS Mata Kuliah.</p>
                 </div>
-                <button 
-                  onClick={() => setShowAddMatkulModal(true)}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-indigo-200/50"
-                >
-                  + Tambah Matakuliah
-                </button>
+                <div className="flex gap-3">
+                  <input type="file" id="import-excel" accept=".xlsx, .xls" className="hidden" onChange={handleImportExcel} />
+                  <label 
+                    htmlFor="import-excel"
+                    className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-sky-200/50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    Import Excel
+                  </label>
+                  <button 
+                    onClick={handleDownloadTemplate}
+                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm rounded-xl transition-all border border-slate-300 flex items-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Template
+                  </button>
+                  <button 
+                    onClick={handleExportExcel}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-200/50 flex items-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Export
+                  </button>
+                  <button 
+                    onClick={() => setShowAddMatkulModal(true)}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-indigo-200/50"
+                  >
+                    + Matakuliah
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {allMatkuls.map((mk) => (
-                  <div key={mk.matkulId} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col hover:border-indigo-300 transition-colors">
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{mk.nama}</h3>
-                          <span className="text-xs font-bold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{mk.kode}</span>
-                        </div>
-                        <p className="text-sm font-semibold text-indigo-600 mt-1">{mk.sks} SKS</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => handleDeleteMatkul(mk.paketId, mk.matkulId)}
-                          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 hover:text-red-600 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-                          title="Hapus Matakuliah"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          Hapus
-                        </button>
-                        <button 
-                          onClick={() => { 
-                            setSelectedMatkul({ paketId: mk.paketId, matkulId: mk.matkulId, nama: mk.nama }); 
-                            setMatkulForm({ 
-                              kode: mk.kode || "", 
-                              nama: mk.nama, 
-                              sks: mk.sks,
-                              cpmk: mk.cpmk ? JSON.parse(JSON.stringify(mk.cpmk)) : []
-                            }); 
-                            setShowEditMatkulModal(true); 
-                          }}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-                          title="Edit Matakuliah"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => { setSelectedMatkul({ paketId: mk.paketId, matkulId: mk.matkulId, nama: mk.nama }); setShowAddCpmkModal(true); }}
-                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          + CPMK
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 space-y-4">
-                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Daftar CPMK & Indikator Harian:</p>
-                      {!mk.cpmk || mk.cpmk.length === 0 ? (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 italic">Belum ada CPMK</p>
-                      ) : (
-                        mk.cpmk.map((c, i) => (
-                          <div key={c._id || i} className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-300 dark:border-slate-600 space-y-3">
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">C{i+1}</div>
-                              <div className="flex-1">
-                                <p className="text-sm text-slate-800 dark:text-slate-100 font-bold leading-snug">{c.nama_cpmk}</p>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm font-bold">
+                      <th className="py-4 px-6 w-16 text-center">No</th>
+                      <th className="py-4 px-6">Mata Kuliah</th>
+                      <th className="py-4 px-6 w-24 text-center">SKS</th>
+                      <th className="py-4 px-6 w-32 text-center">Jml CPMK</th>
+                      <th className="py-4 px-6 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {allMatkuls.length === 0 ? (
+                      <tr><td colSpan="5" className="py-8 text-center text-slate-500 dark:text-slate-400">Belum ada data mata kuliah.</td></tr>
+                    ) : (
+                      allMatkuls.map((mk, index) => (
+                        <React.Fragment key={mk.matkulId}>
+                          <tr 
+                            onClick={() => setExpandedMatkulId(expandedMatkulId === mk.matkulId ? null : mk.matkulId)}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer group"
+                          >
+                            <td className="py-4 px-6 text-center text-slate-500 dark:text-slate-400 font-medium">
+                              {index + 1}
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-800 dark:text-slate-100">{mk.nama}</span>
+                                <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">{mk.kode}</span>
                               </div>
-                              <div className="flex gap-2">
+                            </td>
+                            <td className="py-4 px-6 text-center font-bold text-indigo-600 dark:text-indigo-400">
+                              {mk.sks} SKS
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold">
+                                {mk.cpmk ? mk.cpmk.length : 0}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button 
-                                  onClick={() => handleDeleteCpmk(mk.paketId, mk.matkulId, c._id)}
-                                  className="px-2 py-1 bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 text-[10px] font-bold rounded-md transition-colors flex items-center gap-1"
+                                  onClick={() => { 
+                                    setSelectedMatkul({ paketId: mk.paketId, matkulId: mk.matkulId, nama: mk.nama }); 
+                                    setMatkulForm({ 
+                                      kode: mk.kode || "", 
+                                      nama: mk.nama, 
+                                      sks: mk.sks,
+                                      cpmk: mk.cpmk ? JSON.parse(JSON.stringify(mk.cpmk)) : []
+                                    }); 
+                                    setShowEditMatkulModal(true); 
+                                  }}
+                                  className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300 rounded-lg transition-colors"
                                 >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  Edit Matkul
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteMatkul(mk.paketId, mk.matkulId)}
+                                  className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-lg transition-colors"
+                                >
                                   Hapus
                                 </button>
                                 <button 
-                                  onClick={() => { setSelectedCPMK({ paketId: mk.paketId, matkulId: mk.matkulId, cpmkId: c._id, nama_cpmk: c.nama_cpmk }); setShowAddIndikatorModal(true); }}
-                                  className="px-2 py-1 bg-white dark:bg-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900 border border-slate-200 dark:border-slate-600 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-md transition-colors"
+                                  onClick={() => { setSelectedMatkul({ paketId: mk.paketId, matkulId: mk.matkulId, nama: mk.nama }); setShowAddCpmkModal(true); }}
+                                  className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
                                 >
-                                  + Indikator
+                                  + CPMK
+                                </button>
+                                <button className="px-2 text-slate-400">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${expandedMatkulId === mk.matkulId ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </button>
                               </div>
-                            </div>
-                            
-                            {/* Indikator List */}
-                            <div className="pl-9 space-y-2">
-                              {!c.indikator || c.indikator.length === 0 ? (
-                                <p className="text-xs text-slate-400 dark:text-slate-500 italic border-l-2 border-slate-200 dark:border-slate-700 pl-3">Belum ada indikator kegiatan harian.</p>
-                              ) : (
-                                c.indikator.map((ind, j) => (
-                                  <div key={j} className="flex justify-between items-start border-l-2 border-indigo-200 dark:border-indigo-800 pl-3 group">
-                                    <div className="flex items-start gap-2">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 mt-1.5 shrink-0" />
-                                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{ind}</p>
-                                    </div>
-                                    <button 
-                                      onClick={() => handleDeleteIndikator(mk.paketId, mk.matkulId, c._id, j)}
-                                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1 -mt-1 -mr-1"
-                                      title="Hapus Indikator"
-                                    >
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                    </button>
+                            </td>
+                          </tr>
+                          
+                          {/* Accordion Content for CPMK */}
+                          {expandedMatkulId === mk.matkulId && (
+                            <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t-0">
+                              <td colSpan="5" className="p-0">
+                                <div className="p-6 border-b border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2 fade-in duration-200">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                      Daftar CPMK & Indikator Harian
+                                    </h4>
                                   </div>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                                  
+                                  {!mk.cpmk || mk.cpmk.length === 0 ? (
+                                    <div className="p-8 text-center border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl">
+                                      <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Belum ada CPMK untuk mata kuliah ini.</p>
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                      {mk.cpmk.map((c, i) => (
+                                        <div key={c._id || i} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm flex flex-col h-full hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors group/card">
+                                          <div className="flex items-start gap-2 mb-3">
+                                            <div className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                                              C{i+1}
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-sm text-slate-800 dark:text-slate-100 font-bold leading-snug transition-all">{c.nama_cpmk}</p>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex-1 pr-1 mb-3 space-y-2">
+                                            {!c.indikator || c.indikator.length === 0 ? (
+                                              <p className="text-xs text-slate-400 dark:text-slate-500 italic">Belum ada indikator.</p>
+                                            ) : (
+                                              c.indikator.map((ind, j) => (
+                                                <div key={j} className="flex justify-between items-start border-l-2 border-indigo-200 dark:border-indigo-800 pl-2 group/ind">
+                                                  <div className="flex items-start gap-1.5">
+                                                    <div className="w-1 h-1 rounded-full bg-indigo-400 dark:bg-indigo-500 mt-1.5 shrink-0" />
+                                                    <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{ind}</p>
+                                                  </div>
+                                                  <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteIndikator(mk.paketId, mk.matkulId, c._id, j); }}
+                                                    className="opacity-0 group-hover/ind:opacity-100 text-slate-300 hover:text-red-500 transition-opacity p-0.5"
+                                                    title="Hapus Indikator"
+                                                  >
+                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                  </button>
+                                                </div>
+                                              ))
+                                            )}
+                                          </div>
 
-                  </div>
-                ))}
+                                          <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between gap-2 mt-auto">
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteCpmk(mk.paketId, mk.matkulId, c._id); }}
+                                              className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex items-center gap-1"
+                                            >
+                                              Hapus CPMK
+                                            </button>
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); setSelectedCPMK({ paketId: mk.paketId, matkulId: mk.matkulId, cpmkId: c._id, nama_cpmk: c.nama_cpmk }); setShowAddIndikatorModal(true); }}
+                                              className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded transition-colors"
+                                            >
+                                              + Indikator
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

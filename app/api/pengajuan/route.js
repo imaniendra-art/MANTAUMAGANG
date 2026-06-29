@@ -86,6 +86,7 @@ export async function GET(req) {
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi konsentrasi nomor_hp' })
         .populate({ path: 'paket_matkul_id', select: 'nama_paket' })
         .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp' })
         .populate({ 
           path: 'posisi_id', 
           select: 'konsentrasi nama_posisi mitra_id',

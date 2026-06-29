@@ -71,7 +71,7 @@ export default function PengajuanMagangPage() {
 
   return (
     <DashboardLayout title="Bursa Magang">
-      <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full space-y-8">
         
         {/* Notifikasi / Alert Banner */}
         {userPengajuan && userPengajuan.status_pengajuan === 'menunggu' && (

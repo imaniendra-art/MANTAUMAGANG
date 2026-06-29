@@ -17,7 +17,7 @@ export default function DPLDashboard() {
       ]).then(([logbooks, students]) => {
         setStats({
           totalMhs: Array.isArray(students) ? students.length : 0,
-          pendingValidasi: Array.isArray(logbooks) ? logbooks.length : 0,
+          pendingValidasi: Array.isArray(logbooks) ? logbooks.filter(l => l.status_validasi === 'menunggu_mentor').length : 0,
           pendingEvaluasi: Array.isArray(students) ? students.filter(s => !s.nilai_akhir_mutlak).length : 0,
         });
         setLoading(false);

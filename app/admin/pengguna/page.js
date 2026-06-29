@@ -313,13 +313,28 @@ export default function ManajemenPenggunaPage() {
 
   return (
     <DashboardLayout title="Manajemen Pengguna">
-      <div className="w-full space-y-8 animate-in fade-in duration-500">
+      <div className="w-full space-y-6">
         
-        {/* Header & Tabs */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="p-8 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex space-x-1 bg-white dark:bg-slate-800 shadow-sm p-1.5 rounded-xl w-max mb-6 border border-slate-200 dark:border-slate-700">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${
+              activeTab === tab.id
+                ? "bg-slate-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+        {/* Header Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white">Direktori Pengguna</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Direktori Pengguna</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola data akses seluruh entitas aplikasi Mantau Magang</p>
             </div>
             
@@ -355,26 +370,11 @@ export default function ManajemenPenggunaPage() {
                 </button>
               )}
             </div>
-          </div>
+        </div>
 
-          <div className="px-8 pt-4 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex space-x-6 overflow-x-auto no-scrollbar">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`pb-4 text-sm font-bold tracking-wide whitespace-nowrap transition-all border-b-2 ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                      : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search Bar */}
+        {/* Content Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-6 pt-4 pb-4 flex flex-col md:flex-row md:items-center justify-end gap-4 border-b border-slate-200 dark:border-slate-700">            {/* Search Bar */}
             <div className="relative mb-2 md:mb-0 w-full md:w-64">
               <input 
                 type="text" 

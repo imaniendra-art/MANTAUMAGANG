@@ -126,9 +126,16 @@ function MahasiswaDashboardContent() {
               🎉 Selamat! Anda diterima. DPL Anda: <strong>{namaDpl}</strong>.
             </p>
             {isConfirmed ? (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-4 leading-relaxed bg-emerald-50 dark:bg-emerald-500/10 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
-                ✅ DPL telah mengonfirmasi penyerahan Anda. Silakan mulai magang dan jangan lupa mengisi logbook harian!
-              </p>
+              <div className="space-y-2 mb-4">
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50 dark:bg-emerald-500/10 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+                  ✅ DPL telah mengonfirmasi penyerahan Anda. Silakan mulai magang dan jangan lupa mengisi logbook harian!
+                </p>
+                {analisis?.achieved_today && (
+                  <p className="text-xs text-orange-600 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 animate-pulse shadow-sm">
+                    🔥 Luar biasa! Kamu berhasil mendapatkan {analisis.achieved_count} pencapaian baru hari ini. Teruskan semangatmu!
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
                 Segera hubungi Dosen Pembimbing Lapangan (DPL) Anda untuk koordinasi Magang Mandiri pada <strong>{lokasiMagang}</strong>.
@@ -186,45 +193,72 @@ function MahasiswaDashboardContent() {
       {/* Kolom 1: Status Pengajuan */}
       {renderStatusAlert()}
 
-      {/* Kolom 2: Achievement / Poin Card */}
-      {dplValidatedLog ? (
-        <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-orange-500/10 p-5 rounded-2xl border border-amber-400/20 overflow-hidden flex flex-col justify-center transition-all hover:shadow-md">
-          <div className="absolute -right-4 -bottom-4 text-8xl opacity-[0.06] pointer-events-none">🏆</div>
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center text-xl shadow-lg shadow-orange-500/20 shrink-0">
-              🏅
+      {/* Kolom 2: Mini Achievement Board */}
+      <button 
+        onClick={() => router.push('/mahasiswa/pencapaian')}
+        className="text-left h-full min-h-[8rem] bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none p-5 rounded-2xl border border-slate-200 dark:border-slate-700 transition-all hover:scale-[1.02] hover:border-indigo-400 hover:shadow-md flex flex-col relative overflow-hidden group"
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
+            🏆 Papan Pencapaian <span className="text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
+          </h3>
+          <span className="text-[10px] font-bold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-600">
+            {analisis?.achievements?.filter(a => a.status === 'tercapai').length || 0} / {analisis?.achievements?.length || 0}
+          </span>
+        </div>
+        
+          <div className="max-h-[88px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-5 sm:grid-cols-6 gap-2">
+              {analisis.achievements.map((ach, i) => (
+                <div 
+                  key={i} 
+                  title={ach.nama_cpmk}
+                  className={`aspect-square w-full max-w-[3rem] rounded-xl flex items-center justify-center text-lg transition-all ${
+                    ach.status === 'tercapai' 
+                      ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-orange-500/40 ring-2 ring-amber-200' 
+                      : ach.status === 'pending'
+                      ? 'bg-blue-100 text-blue-500 border border-blue-200'
+                      : 'bg-slate-100 text-slate-300 grayscale'
+                  }`}
+                >
+                  {ach.status === 'tercapai' ? '⭐' : ach.status === 'pending' ? '⏳' : '🔒'}
+                </div>
+              ))}
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Achievement Terkunci!</h3>
-              <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">+ {dplValidatedLog.nilai_otomatis} Poin Kinerja</p>
-            </div>
+            
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                width: 4px;
+              }
+              div::-webkit-scrollbar-track {
+                background: rgba(0,0,0,0.05); 
+                border-radius: 10px;
+              }
+              div::-webkit-scrollbar-thumb {
+                background: rgba(0,0,0,0.15); 
+                border-radius: 10px;
+              }
+              div::-webkit-scrollbar-thumb:hover {
+                background: rgba(0,0,0,0.25); 
+              }
+            `}</style>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-relaxed relative z-10 mt-2 line-clamp-2">
-            🎉 Kegiatan <span className="font-bold text-slate-800 dark:text-slate-100">&quot;{dplValidatedLog.deskripsi_kegiatan}&quot;</span> telah memenuhi CPMK.
-          </p>
-        </div>
-      ) : (
-        <div className="h-full min-h-[8rem] bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
-          <div className="text-3xl mb-2">🎯</div>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Belum Ada Poin</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Dapatkan validasi DPL pada logbook harianmu!</p>
-        </div>
-      )}
+      </button>
 
       {/* Kolom 3: Monoton Alert / Variasi Baik */}
       {analisis?.peringatan_monoton ? (
         <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-red-500/10 to-red-500/5 p-5 rounded-2xl border border-red-400/20 overflow-hidden flex flex-col justify-center transition-all hover:shadow-md">
           <div className="flex items-center gap-3 relative z-10">
             <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl border border-red-500/20 shrink-0">
-              ⚠️
+              💡
             </div>
             <div>
-              <h3 className="text-sm font-bold text-red-300">Awas Monoton!</h3>
-              <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">3 Hari Berturut-turut</p>
+              <h3 className="text-sm font-bold text-red-300">Saran Aktivitas</h3>
+              <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Tingkatkan Variasi</p>
             </div>
           </div>
-          <p className="text-red-200/80 text-xs font-medium leading-relaxed mt-2 line-clamp-2">
-            Kamu melakukan kegiatan yang sama. Diskusikan dengan Mentor untuk tanggung jawab baru!
+          <p className="text-red-200/80 text-[11px] font-medium leading-relaxed mt-3 line-clamp-3">
+            Akhir-akhir ini kegiatanmu monoton. Coba tanyakan ke Mentor apakah kamu bisa membantu: <strong className="text-red-100 italic">&quot;{analisis.suggested_indicator || 'Observasi proses kerja'}&quot;</strong>
           </p>
         </div>
       ) : (
@@ -278,7 +312,6 @@ function MahasiswaDashboardContent() {
       )}
       
       <DashboardLayout title="Dashboard Prestasi" notifications={notificationCards}>
-        {/* Children kosong untuk dashboard utama — semua konten ada di hero + notif + menu cards */}
       </DashboardLayout>
     </>
   );

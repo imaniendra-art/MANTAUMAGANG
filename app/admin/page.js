@@ -82,7 +82,7 @@ export default function AdminDashboard() {
           <div className="bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md">
             <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-emerald-500/10 dark:bg-emerald-500/20 blur-[30px] rounded-full pointer-events-none" />
             <div className="relative z-10">
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Total Ajuan</p>
+              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Total Pengajuan Masuk</p>
               <p className="text-3xl font-black text-slate-800 dark:text-slate-100 mt-2">{stats.totalAjuan}</p>
             </div>
           </div>

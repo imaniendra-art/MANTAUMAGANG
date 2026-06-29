@@ -9,6 +9,7 @@ const MatkulSchema = new mongoose.Schema({
   kode: { type: String, required: true },
   nama: { type: String, required: true },
   sks: { type: Number, required: true },
+  dosen_pengampu: { type: String, default: "" },
   cpmk: [CpmkSchema],
 });
 

@@ -138,35 +138,37 @@ export default function ValidasiPengajuan() {
         </div>
       )}
 
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-6">
+      <div className="flex space-x-1 bg-white dark:bg-slate-800 shadow-sm p-1.5 rounded-xl w-max border border-slate-200 dark:border-slate-700">
+        <button
+          className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${
+            activeTab === 'menunggu' 
+              ? 'bg-slate-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+              : 'text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
+          }`}
+          onClick={() => setActiveTab('menunggu')}
+        >
+          ⏳ Antrean Validasi
+        </button>
+        <button
+          className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${
+            activeTab === 'disetujui' 
+              ? 'bg-slate-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+              : 'text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
+          }`}
+          onClick={() => setActiveTab('disetujui')}
+        >
+          ✅ Data Divalidasi
+        </button>
+      </div>
+
+        {/* Header Card */}
+        <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Validasi Pengajuan Mahasiswa</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Verifikasi pengajuan tempat magang mahasiswa dan alokasikan Dosen Pembimbing Lapangan (DPL).</p>
+        </div>
+
         <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
-            
-            {/* TABS HEADER */}
-            <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-              <div className="flex px-2 sm:px-6 overflow-x-auto hide-scrollbar">
-                <button
-                  className={`py-4 px-6 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === 'menunggu' 
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
-                      : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                  onClick={() => setActiveTab('menunggu')}
-                >
-                  ⏳ Antrean Validasi
-                </button>
-                <button
-                  className={`py-4 px-6 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === 'disetujui' 
-                      ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' 
-                      : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                  onClick={() => setActiveTab('disetujui')}
-                >
-                  ✅ Daftar Data yang Sudah Divalidasi
-                </button>
-              </div>
-            </div>
-            
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -293,10 +295,17 @@ export default function ValidasiPengajuan() {
                               <p className="text-xs text-slate-500">{p.dpl_id?.nomor_hp || 'Belum ada kontak'}</p>
                             </td>
                             <td className="py-4 px-4">
-                              <div className="inline-block px-2.5 py-1 rounded border bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
-                                <p className="font-bold text-[11px] text-slate-600 dark:text-slate-300">By Sistem / Mitra</p>
-                                <p className="text-[10px] text-slate-400">Akan ditugaskan instansi</p>
-                              </div>
+                              {p.mentor_id ? (
+                                <>
+                                  <p className="font-bold text-cyan-600 dark:text-cyan-400">{p.mentor_id?.nama_lengkap}</p>
+                                  <p className="text-xs text-slate-500">{p.mentor_id?.nomor_hp || 'Belum ada kontak'}</p>
+                                </>
+                              ) : (
+                                <div className="inline-block px-2.5 py-1 rounded border bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+                                  <p className="font-bold text-[11px] text-slate-600 dark:text-slate-300">By Sistem / Mitra</p>
+                                  <p className="text-[10px] text-slate-400">Akan ditugaskan instansi</p>
+                                </div>
+                              )}
                             </td>
                           </>
                         )}
