@@ -66,9 +66,9 @@ export default function Home() {
               >
                 {status === 'authenticated' ? 'Cari Posisi' : 'Cari Posisi'}
               </button>
-              <button className="px-8 py-3.5 rounded-lg border-2 border-slate-500 hover:bg-slate-800 text-slate-100 font-bold text-lg transition-all">
+              <Link href="/alur" className="px-8 py-3.5 rounded-lg border-2 border-slate-500 hover:bg-slate-800 text-slate-100 font-bold text-lg transition-all inline-block text-center">
                 Pelajari Alur
-              </button>
+              </Link>
             </div>
           </div>
         </section>

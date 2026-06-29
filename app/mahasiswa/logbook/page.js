@@ -83,7 +83,7 @@ export default function LogbookPage() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran foto maksimal 2MB");
+        alert("Ukuran file maksimal 2MB");
         e.target.value = null;
         return;
       }
@@ -107,7 +107,7 @@ export default function LogbookPage() {
     }
     
     if (!buktiFoto) {
-      alert("Wajib mengunggah foto bukti kegiatan nyata di lapangan.");
+      alert("Wajib mengunggah file bukti kegiatan nyata di lapangan.");
       return;
     }
     
@@ -183,6 +183,30 @@ export default function LogbookPage() {
       case 'divalidasi_dpl': return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-md">Divalidasi DPL</span>;
       case 'revisi': return <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md">Revisi</span>;
       default: return <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md">{status}</span>;
+    }
+  };
+
+  const handleViewFile = (dataUrl) => {
+    try {
+      const arr = dataUrl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      if (!mimeMatch) {
+        window.open(dataUrl, '_blank');
+        return;
+      }
+      const mime = mimeMatch[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error("Gagal membuka file:", e);
+      window.open(dataUrl, '_blank');
     }
   };
 
@@ -303,8 +327,8 @@ export default function LogbookPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Upload Foto Bukti <span className="text-red-500">*</span></label>
-                    <input required id="file-upload" type="file" accept="image/*" onChange={handleFileChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 bg-slate-50 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Upload Bukti (Foto/PDF) <span className="text-red-500">*</span></label>
+                    <input required id="file-upload" type="file" accept="image/*,application/pdf" onChange={handleFileChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 bg-slate-50 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Link Google Drive / URL (Opsional)</label>
@@ -350,42 +374,50 @@ export default function LogbookPage() {
                     
                     <p className="text-slate-700 text-sm mt-4 leading-relaxed">{log.deskripsi_kegiatan}</p>
                     
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-3">
-                      <div className="flex flex-col gap-2 items-start">
-                        {log.matched_indicators && log.matched_indicators.length > 0 ? (
-                          log.matched_indicators.map((ind, i) => (
-                            <div key={i} className="flex gap-2 items-start mb-1">
-                              <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded shrink-0">CPMK Terpenuhi</span>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs text-slate-700 font-bold bg-slate-100 px-2 py-1 rounded break-words">
-                                  {ind.matkul_nama ? <span className="text-indigo-600 mr-1">[{ind.matkul_kode} {ind.matkul_nama}]</span> : null}
-                                  {ind.nama_cpmk}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-1 italic break-words">&quot;{ind.indikator}&quot;</p>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <details className="group flex-1">
+                          <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors list-none select-none w-max">
+                            <span className="group-open:rotate-90 transition-transform duration-200">▶</span>
+                            Lihat Capaian Target CPMK
+                          </summary>
+                          <div className="mt-3 flex flex-col gap-2 items-start pl-2">
+                            {log.matched_indicators && log.matched_indicators.length > 0 ? (
+                              log.matched_indicators.map((ind, i) => (
+                                <div key={i} className="flex gap-2 items-start mb-1">
+                                  <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded shrink-0">CPMK Terpenuhi</span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-700 font-bold bg-slate-100 px-2 py-1 rounded break-words">
+                                      {ind.matkul_nama ? <span className="text-indigo-600 mr-1">[{ind.matkul_kode} {ind.matkul_nama}]</span> : null}
+                                      {ind.nama_cpmk}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-1 italic break-words">&quot;{ind.indikator}&quot;</p>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="flex gap-2 items-start">
+                                <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded mt-0.5">💡 Tidak Memenuhi Target CPMK</span>
+                                <span className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Kegiatan ini bersifat rutinitas biasa.</span>
                               </div>
+                            )}
+                          </div>
+                        </details>
+                        
+                        <div className="flex flex-wrap gap-4 shrink-0 mt-0.5">
+                          {log.bukti_kegiatan && (
+                            <div className="flex gap-2 items-center">
+                              <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">File Bukti</span>
+                              <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="text-xs font-bold text-blue-600 hover:underline cursor-pointer">Lihat Bukti (File)</button>
                             </div>
-                          ))
-                        ) : (
-                          <div className="flex gap-2 items-center">
-                            <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Status CPMK</span>
-                            <span className="text-xs text-slate-400 italic">Sistem AI tidak mendeteksi indikator yang relevan</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-4 mt-2">
-                        {log.bukti_kegiatan && (
-                          <div className="flex gap-2 items-center">
-                            <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">Foto Bukti</span>
-                            <a href={log.bukti_kegiatan} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 hover:underline">Lihat Foto</a>
-                          </div>
-                        )}
-                        {log.bukti_link && (
-                          <div className="flex gap-2 items-center">
-                            <span className="text-xs font-bold bg-sky-50 text-sky-600 px-2 py-1 rounded">Link Bukti</span>
-                            <a href={log.bukti_link} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 hover:underline truncate max-w-xs">{log.bukti_link}</a>
-                          </div>
-                        )}
+                          )}
+                          {log.bukti_link && (
+                            <div className="flex gap-2 items-center">
+                              <span className="text-xs font-bold bg-sky-50 text-sky-600 px-2 py-1 rounded">Link Bukti</span>
+                              <a href={log.bukti_link} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 hover:underline truncate max-w-xs">{log.bukti_link}</a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

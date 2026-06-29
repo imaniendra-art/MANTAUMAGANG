@@ -1,191 +1,336 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import DashboardLayout from '@/components/DashboardLayout';
+import Link from 'next/link';
 
-export default function MahasiswaLaporan() {
+export default function LaporanAkhirPage() {
   const { data: session } = useSession();
+  const [laporan, setLaporan] = useState(null);
   const [pengajuan, setPengajuan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(true);
+  const [daysRemaining, setDaysRemaining] = useState(0);
+  const [activeTab, setActiveTab] = useState('bab');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [formData, setFormData] = useState({
+    bab1_pendahuluan: '',
+    bab2_profil: '',
+    bab3_aktivitas: '',
+    bab4_permasalahan: '',
+    bab5_kesimpulan: '',
+    bab6_refleksi: '',
+    file_pengantar: '',
+    file_penerimaan: '',
+    file_keterangan: '',
+    status: 'draft'
+  });
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`/api/laporan-akhir?mhsId=${session.user.id}`);
+      if (!res.ok) {
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setLaporan(data.laporan);
+      setPengajuan(data.pengajuan);
+
+      if (data.laporan) {
+        setFormData({
+          bab1_pendahuluan: data.laporan.bab1_pendahuluan || '',
+          bab2_profil: data.laporan.bab2_profil || '',
+          bab3_aktivitas: data.laporan.bab3_aktivitas || '',
+          bab4_permasalahan: data.laporan.bab4_permasalahan || '',
+          bab5_kesimpulan: data.laporan.bab5_kesimpulan || '',
+          bab6_refleksi: data.laporan.bab6_refleksi || '',
+          file_pengantar: data.laporan.file_pengantar || '',
+          file_penerimaan: data.laporan.file_penerimaan || '',
+          file_keterangan: data.laporan.file_keterangan || '',
+          status: data.laporan.status || 'draft'
+        });
+      }
+
+      // Hitung Time-Lock
+      const tglSelesai = new Date(data.pengajuan.tanggal_selesai);
+      const openDate = new Date(tglSelesai);
+      openDate.setDate(openDate.getDate() - 14); // Buka H-14
+      const now = new Date();
+
+      if (now < openDate) {
+        setIsLocked(true);
+        const diffTime = Math.abs(openDate - now);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        setDaysRemaining(diffDays);
+      } else {
+        setIsLocked(false);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (session?.user?.id) {
-      fetch(`/api/pengajuan?mhsId=${session.user.id}`)
-        .then(res => res.json())
-        .then(data => {
-          setPengajuan(data);
-          setLoading(false);
-        });
+      fetchData();
     }
   }, [session]);
 
-  const getGrade = (score) => {
-    if (score >= 85) return 'A';
-    if (score >= 70) return 'B';
-    if (score >= 55) return 'C';
-    if (score >= 40) return 'D';
-    return 'E';
+  const handleSave = async (submitFinal = false) => {
+    setIsSaving(true);
+    try {
+      const payload = { ...formData, mhsId: session.user.id };
+      if (submitFinal) payload.status = 'submitted';
+
+      const res = await fetch('/api/laporan-akhir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        alert(submitFinal ? 'Laporan berhasil disubmit final!' : 'Draf berhasil disimpan!');
+        fetchData();
+      }
+    } catch (error) {
+      alert('Terjadi kesalahan saat menyimpan.');
+    }
+    setIsSaving(false);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Ukuran file maksimal 2MB");
+        e.target.value = null;
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, [field]: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  if (loading) {
+  if (loading) return <DashboardLayout title="Laporan & Sertifikat"><div className="p-8 text-center text-slate-500">Memuat data...</div></DashboardLayout>;
+
+  if (!pengajuan) {
     return (
       <DashboardLayout title="Laporan & Sertifikat">
-        <div className="text-center py-20 text-slate-500 font-bold animate-pulse">Memuat data kelulusan...</div>
+        <div className="p-8">
+          <div className="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100">
+            <h3 className="font-bold text-lg mb-2">Akses Ditolak</h3>
+            <p>Anda belum memiliki pengajuan magang yang aktif atau disetujui. Laporan Akhir belum dapat diakses.</p>
+          </div>
+        </div>
       </DashboardLayout>
     );
   }
 
-  const isEvaluated = pengajuan && pengajuan.nilai_akhir_mutlak !== undefined && pengajuan.nilai_akhir_mutlak !== null;
-
-  return (
-    <DashboardLayout title="Laporan Akhir & Sertifikat Magang">
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          /* Sembunyikan elemen non-cetak */
-          aside, header, nav, .no-print, button {
-            display: none !important;
-          }
-          
-          /* Reset container utama agar tidak terpotong h-screen / overflow */
-          body, html, #__next, div.min-h-screen, div.flex-1 {
-            height: auto !important;
-            min-height: auto !important;
-            overflow: visible !important;
-            position: static !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-          }
-
-          main {
-            padding: 0 !important;
-            margin: 0 !important;
-            overflow: visible !important;
-          }
-
-          /* Rapikan area print */
-          #print-area {
-            position: static !important;
-            display: block !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-
-          @page {
-            size: A4;
-            margin: 2cm;
-          }
-        }
-      `}} />
-
-      {!isEvaluated ? (
-        <div className="max-w-2xl mx-auto mt-10 animate-in zoom-in-95 duration-500">
-          <div className="bg-white p-12 rounded-3xl border border-slate-200 shadow-sm text-center">
-            <div className="w-24 h-24 bg-slate-100 text-slate-500 dark:text-slate-400 rounded-full flex items-center justify-center text-5xl mx-auto mb-6">⏳</div>
-            <h2 className="text-2xl font-black text-slate-900 mb-3">Evaluasi Belum Selesai</h2>
-            <p className="text-slate-600 leading-relaxed">
-              Laporan Akhir dan Sertifikat Anda sedang dalam tahap penyusunan dan pleno oleh DPL dan Mentor Instansi. Halaman ini akan terbuka secara otomatis setelah Nilai Akhir diterbitkan.
+  // Tampilan LOCK
+  if (isLocked) {
+    return (
+      <DashboardLayout title="Laporan & Sertifikat">
+        <div className="p-8 max-w-4xl mx-auto mt-10">
+          <div className="bg-white rounded-[2rem] p-12 text-center shadow-[0_20px_50px_rgb(0,0,0,0.05)] border border-slate-100">
+            <div className="w-24 h-24 mx-auto bg-slate-100 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
+              🔒
+            </div>
+            <h2 className="text-3xl font-black text-slate-800 mb-4">Halaman Terkunci</h2>
+            <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto">
+              Berdasarkan jadwal, kegiatan magang Anda baru akan berakhir pada <span className="font-bold text-blue-600">{new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</span>. 
+              Sesuai peraturan, halaman Laporan Akhir & Sertifikat akan terbuka <span className="font-bold">14 hari sebelum</span> masa magang berakhir.
             </p>
+            <div className="inline-block bg-blue-50 border border-blue-200 rounded-2xl p-6 px-10">
+              <div className="text-sm font-bold text-blue-500 uppercase tracking-widest mb-2">Terbuka Dalam Waktu</div>
+              <div className="text-5xl font-black text-blue-700">{daysRemaining} Hari</div>
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="space-y-6">
+      </DashboardLayout>
+    );
+  }
+
+  // Tampilan UNLOCKED (Form)
+  return (
+    <DashboardLayout title="Penyusunan Laporan Akhir">
+      <div className="p-8 max-w-6xl mx-auto">
+
+        {formData.status === 'submitted' && (
+          <div className="mb-8 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-center gap-3">
+            <div className="text-2xl">✅</div>
+            <div>
+              <div className="font-bold">Laporan Telah Disubmit Final</div>
+              <div className="text-sm">Anda tidak dapat lagi mengubah isi laporan. Laporan telah dibekukan untuk dicetak.</div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Navigasi */}
+        <div className="flex bg-white rounded-t-2xl border-b border-slate-200 p-2 gap-2 shadow-sm flex-wrap">
+          <button onClick={() => setActiveTab('bab')} className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'bab' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+            📝 Isi Laporan (Bab I - VI)
+          </button>
+          <button onClick={() => setActiveTab('dokumen')} className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'dokumen' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+            📎 Upload Surat Pendukung
+          </button>
+          <button onClick={() => setActiveTab('cetak')} className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'cetak' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+            🖨️ Cetak & SKPI
+          </button>
+        </div>
+
+        {/* Konten Tab */}
+        <div className="bg-white p-8 rounded-b-2xl shadow-sm border border-t-0 border-slate-100 min-h-[500px]">
           
-          <div className="flex gap-4 mb-8 no-print">
-            <button onClick={handlePrint} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-slate-800 dark:text-slate-100 font-bold rounded-xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2">
-              📄 Generate Transkrip Resmi (PDF)
-            </button>
-            <button onClick={handlePrint} className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-800 dark:text-slate-100 font-bold rounded-xl shadow-[0_4px_15px_rgba(245,158,11,0.3)] transition-all flex items-center gap-2">
-              🎓 Generate Sertifikat (PDF)
-            </button>
-          </div>
-
-          <div id="print-area" className="bg-white p-10 md:p-16 rounded-3xl border border-slate-200 shadow-md max-w-4xl mx-auto font-serif text-slate-900 relative">
-            
-            {/* Latar Belakang Transparan Sertifikat (Opsional) */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-              <div className="text-[250px] font-black tracking-tighter">STIMI</div>
-            </div>
-
-            {/* Kop Surat STIMI */}
-            <div className="border-b-4 border-slate-900 pb-6 mb-8 flex items-center gap-6 relative z-10">
-              <div className="w-24 h-24 bg-indigo-900 rounded-full flex items-center justify-center text-slate-800 dark:text-slate-100 font-sans font-black text-xs text-center shrink-0">
-                LOGO<br/>STIMI
+          {/* TAB 1: ISI LAPORAN */}
+          {activeTab === 'bab' && (
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">BAB I. Pendahuluan</h3>
+                <p className="text-sm text-slate-500 mb-3">Tuliskan latar belakang dan tujuan magang Anda.</p>
+                <textarea disabled={formData.status === 'submitted'} value={formData.bab1_pendahuluan} onChange={(e) => setFormData({...formData, bab1_pendahuluan: e.target.value})} className="w-full h-40 border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ketik di sini..."></textarea>
               </div>
-              <div className="flex-1 text-center">
-                <h1 className="text-2xl font-black tracking-widest uppercase">Sekolah Tinggi Ilmu Manajemen Indonesia</h1>
-                <h2 className="text-xl font-bold uppercase mt-1">(STIMI) YAPMI MAKASSAR</h2>
-                <p className="text-sm mt-2 font-medium">Jl. Perintis Kemerdekaan, Tamalanrea, Makassar, Sulawesi Selatan</p>
-                <p className="text-sm font-medium">Website: www.stimiyapmim.ac.id | Email: info@stimiyapmim.ac.id</p>
+              
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">BAB II. Profil Perusahaan</h3>
+                <p className="text-sm text-slate-500 mb-3">Jelaskan sejarah singkat, struktur, dan bidang usaha tempat magang.</p>
+                <textarea disabled={formData.status === 'submitted'} value={formData.bab2_profil} onChange={(e) => setFormData({...formData, bab2_profil: e.target.value})} className="w-full h-40 border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ketik di sini..."></textarea>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">BAB III. Aktivitas Magang</h3>
+                <p className="text-sm text-slate-500 mb-3">Ceritakan secara naratif aktivitas utama Anda (Foto bukti akan otomatis ditarik dari logbook).</p>
+                <textarea disabled={formData.status === 'submitted'} value={formData.bab3_aktivitas} onChange={(e) => setFormData({...formData, bab3_aktivitas: e.target.value})} className="w-full h-40 border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ketik di sini..."></textarea>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">BAB IV. Permasalahan & Pembahasan</h3>
+                <p className="text-sm text-slate-500 mb-3">Masalah apa yang Anda hadapi dan bagaimana solusinya?</p>
+                <textarea disabled={formData.status === 'submitted'} value={formData.bab4_permasalahan} onChange={(e) => setFormData({...formData, bab4_permasalahan: e.target.value})} className="w-full h-40 border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ketik di sini..."></textarea>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">BAB V. Kesimpulan & Rekomendasi</h3>
+                <p className="text-sm text-slate-500 mb-3">Tuliskan kesimpulan program ini beserta rekomendasi untuk instansi dan kampus.</p>
+                <textarea disabled={formData.status === 'submitted'} value={formData.bab5_kesimpulan} onChange={(e) => setFormData({...formData, bab5_kesimpulan: e.target.value})} className="w-full h-40 border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ketik di sini..."></textarea>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">BAB VI. Refleksi Diri</h3>
+                <p className="text-sm text-slate-500 mb-3">Pelajaran hidup dan wawasan baru apa yang Anda dapatkan secara personal?</p>
+                <textarea disabled={formData.status === 'submitted'} value={formData.bab6_refleksi} onChange={(e) => setFormData({...formData, bab6_refleksi: e.target.value})} className="w-full h-40 border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ketik di sini..."></textarea>
               </div>
             </div>
+          )}
 
-            {/* Judul Dokumen */}
-            <div className="text-center mb-10 relative z-10">
-              <h3 className="text-xl font-black uppercase underline underline-offset-4">Transkrip Nilai Magang Berdampak (OBE)</h3>
-              <p className="text-sm mt-2 font-bold uppercase">Tahun Akademik 2026/2027</p>
+          {/* TAB 2: UPLOAD DOKUMEN */}
+          {activeTab === 'dokumen' && (
+            <div className="space-y-6">
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm mb-6">
+                <strong>Penting:</strong> Dokumen-dokumen di bawah ini wajib diunggah (format PDF/Foto maksimal 2MB) karena akan dijadikan lampiran resmi di halaman paling belakang Laporan Anda.
+              </div>
+
+              <div className="border border-slate-200 rounded-2xl p-6">
+                <h4 className="font-bold text-slate-800 mb-1">1. Surat Pengantar Magang</h4>
+                <p className="text-xs text-slate-500 mb-4">Surat resmi dari kampus ke instansi di awal pengajuan.</p>
+                <input disabled={formData.status === 'submitted'} type="file" accept="image/*,application/pdf" onChange={(e) => handleFileChange(e, 'file_pengantar')} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                {formData.file_pengantar && <span className="ml-4 text-xs font-bold text-emerald-600">✓ Berkas Tersimpan</span>}
+              </div>
+
+              <div className="border border-slate-200 rounded-2xl p-6">
+                <h4 className="font-bold text-slate-800 mb-1">2. Surat Penerimaan Magang</h4>
+                <p className="text-xs text-slate-500 mb-4">Surat balasan dari instansi bahwa Anda diterima.</p>
+                <input disabled={formData.status === 'submitted'} type="file" accept="image/*,application/pdf" onChange={(e) => handleFileChange(e, 'file_penerimaan')} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                {formData.file_penerimaan && <span className="ml-4 text-xs font-bold text-emerald-600">✓ Berkas Tersimpan</span>}
+              </div>
+
+              <div className="border border-slate-200 rounded-2xl p-6">
+                <h4 className="font-bold text-slate-800 mb-1">3. Surat Keterangan Telah Magang</h4>
+                <p className="text-xs text-slate-500 mb-4">Surat keterangan resmi di akhir dari instansi (opsional tergantung mitra).</p>
+                <input disabled={formData.status === 'submitted'} type="file" accept="image/*,application/pdf" onChange={(e) => handleFileChange(e, 'file_keterangan')} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                {formData.file_keterangan && <span className="ml-4 text-xs font-bold text-emerald-600">✓ Berkas Tersimpan</span>}
+              </div>
             </div>
+          )}
 
-            {/* Data Diri */}
-            <div className="grid grid-cols-[150px_20px_1fr] gap-y-3 text-sm font-medium mb-12 relative z-10">
-              <div>Nama Mahasiswa</div><div>:</div><div className="font-bold">{pengajuan.mahasiswa_id?.nama_lengkap}</div>
-              <div>NIM / NIDN</div><div>:</div><div className="font-bold">{pengajuan.mahasiswa_id?.nim_nidn}</div>
-              <div>Program Studi</div><div>:</div><div className="font-bold">{pengajuan.mahasiswa_id?.program_studi || 'Manajemen'}</div>
-              <div>Instansi Magang</div><div>:</div><div className="font-bold">{pengajuan.detail_tempat?.nama}</div>
-              <div>Posisi / Peran</div><div>:</div><div className="font-bold">{pengajuan.detail_tempat?.posisi}</div>
-            </div>
-
-            {/* Nilai Utama */}
-            <div className="bg-slate-50 border-2 border-slate-800 p-8 mb-12 text-center flex flex-col items-center relative z-10">
-              <p className="text-sm font-bold uppercase tracking-widest mb-6 border-b border-slate-300 pb-2 w-full">Hasil Evaluasi Akhir Mutlak</p>
-              <div className="flex items-end justify-center gap-16">
-                <div className="text-center">
-                  <div className="text-8xl font-black text-slate-900 leading-none drop-shadow-md">{getGrade(pengajuan.nilai_akhir_mutlak)}</div>
-                  <p className="text-xs font-bold uppercase tracking-widest mt-4">Huruf Mutu</p>
+          {/* TAB 3: CETAK */}
+          {activeTab === 'cetak' && (
+            <div className="space-y-6">
+              {formData.status !== 'submitted' ? (
+                <div className="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100 text-center">
+                  <div className="text-4xl mb-3">⚠️</div>
+                  <h3 className="font-bold text-lg">Dokumen Belum Bisa Dicetak</h3>
+                  <p className="text-sm mt-1">Anda harus melakukan <strong>Submit Final</strong> terlebih dahulu sebelum sistem dapat membuat (generate) dokumen PDF Anda secara permanen dan menempelkan QR Code SKPI.</p>
                 </div>
-                <div className="text-center">
-                  <div className="text-8xl font-black text-slate-900 leading-none drop-shadow-md">{pengajuan.nilai_akhir_mutlak}</div>
-                  <p className="text-xs font-bold uppercase tracking-widest mt-4">Angka Mutu</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  <div className="border border-slate-200 rounded-2xl p-8 hover:shadow-lg transition-all text-center group bg-white">
+                    <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📘</div>
+                    <h3 className="font-black text-xl text-slate-800 mb-2">Laporan Akhir (A4)</h3>
+                    <p className="text-sm text-slate-500 mb-6">Dokumen lengkap Bab I - VI beserta lampiran surat dan foto logbook.</p>
+                    <Link href={`/mahasiswa/laporan/cetak/laporan?id=${laporan._id}`} target="_blank" className="w-full block py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/30">
+                      Download PDF
+                    </Link>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl p-8 hover:shadow-lg transition-all text-center group bg-white">
+                    <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🎖️</div>
+                    <h3 className="font-black text-xl text-slate-800 mb-2">Sertifikat Mahasiswa</h3>
+                    <p className="text-sm text-slate-500 mb-6">Sertifikat kelulusan magang dengan Validasi QR Code SKPI (Landscape).</p>
+                    <Link href={`/mahasiswa/laporan/cetak/sertifikat-mahasiswa?id=${laporan._id}`} target="_blank" className="w-full block py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-500/30">
+                      Download PDF
+                    </Link>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl p-8 hover:shadow-lg transition-all text-center group bg-white">
+                    <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</div>
+                    <h3 className="font-black text-xl text-slate-800 mb-2">Transkrip Nilai SKS</h3>
+                    <p className="text-sm text-slate-500 mb-6">Rekapan konversi nilai kegiatan dengan Validasi QR Code SKPI (A4).</p>
+                    <Link href={`/mahasiswa/laporan/cetak/transkrip?id=${laporan._id}`} target="_blank" className="w-full block py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-500/30">
+                      Download PDF
+                    </Link>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl p-8 hover:shadow-lg transition-all text-center group bg-white">
+                    <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🏢</div>
+                    <h3 className="font-black text-xl text-slate-800 mb-2">Sertifikat Perusahaan</h3>
+                    <p className="text-sm text-slate-500 mb-6">Sertifikat penghargaan untuk pihak mitra dari pimpinan kampus (Landscape).</p>
+                    <Link href={`/mahasiswa/laporan/cetak/sertifikat-mitra?id=${laporan._id}`} target="_blank" className="w-full block py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold shadow-md shadow-slate-500/30">
+                      Download PDF
+                    </Link>
+                  </div>
+
                 </div>
-              </div>
+              )}
             </div>
-
-            {/* Catatan Evaluasi */}
-            <div className="mb-16 relative z-10">
-              <h4 className="font-bold border-b border-slate-300 pb-2 mb-3">Catatan Evaluasi Pembimbing:</h4>
-              <p className="italic text-slate-700 leading-relaxed text-justify">
-                &quot;{pengajuan.catatan_evaluasi || 'Mahasiswa telah menyelesaikan program magang berdampak dengan baik dan memenuhi capaian pembelajaran mata kuliah (CPMK) yang disyaratkan sesuai dengan kurikulum yang ditetapkan oleh prodi.'}&quot;
-              </p>
-            </div>
-
-            {/* Tanda Tangan */}
-            <div className="flex justify-between items-end pt-10 mt-10 relative z-10">
-              <div className="text-center">
-                <p className="mb-24 font-medium">Mengetahui,<br/>Mentor / Pembimbing Instansi</p>
-                <div className="w-56 border-b border-slate-800 mx-auto"></div>
-                <p className="mt-2 font-bold">(..................................................)</p>
-              </div>
-              <div className="text-center">
-                <p className="mb-24 font-medium">Makassar, {new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}<br/>Dosen Pembimbing Lapangan</p>
-                <div className="w-56 border-b border-slate-800 mx-auto"></div>
-                <p className="mt-2 font-bold">(..................................................)</p>
-              </div>
-            </div>
-
-          </div>
+          )}
         </div>
-      )}
+
+        {/* Aksi Bawah */}
+        {formData.status !== 'submitted' && (
+          <div className="mt-8 flex justify-end gap-4">
+            <button onClick={() => handleSave(false)} disabled={isSaving} className="px-8 py-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50">
+              {isSaving ? 'Menyimpan...' : 'Simpan Draf'}
+            </button>
+            <button onClick={() => {
+              if (confirm('Yakin ingin SUBMIT FINAL? Setelah ini laporan akan dibekukan dan dokumen dapat dicetak.')) {
+                handleSave(true);
+              }
+            }} disabled={isSaving} className="px-8 py-3 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-500/30 disabled:opacity-50">
+              Submit Final
+            </button>
+          </div>
+        )}
+
+      </div>
     </DashboardLayout>
   );
 }

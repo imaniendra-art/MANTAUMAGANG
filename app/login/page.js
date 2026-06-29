@@ -82,8 +82,8 @@ export default function Login() {
       <div className="max-w-md w-full relative z-10 space-y-8 bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none backdrop-blur-xl p-10 rounded-3xl shadow-[0_8px_60px_rgb(0,0,0,0.3)] border border-slate-200 dark:border-slate-700">
         <div>
           <div className="text-center">
-            <Link href="/" className="inline-block text-2xl font-black tracking-wider text-white mb-2">
-              MANTAU<span className="text-blue-400">MAGANG</span>
+            <Link href="/" className="inline-block mb-2">
+              <img src="/mm_white.png" alt="MANTAUMAGANG Logo" className="h-12 mx-auto" />
             </Link>
           </div>
           <h2 className="mt-4 text-center text-3xl font-extrabold text-white">

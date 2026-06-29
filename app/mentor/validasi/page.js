@@ -67,6 +67,30 @@ export default function MentorValidasi() {
     }
   };
 
+  const handleViewFile = (dataUrl) => {
+    try {
+      const arr = dataUrl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      if (!mimeMatch) {
+        window.open(dataUrl, '_blank');
+        return;
+      }
+      const mime = mimeMatch[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error("Gagal membuka file:", e);
+      window.open(dataUrl, '_blank');
+    }
+  };
+
   return (
     <DashboardLayout title="Validasi Faktual (Mentor)">
       {toastMessage && (
@@ -176,9 +200,9 @@ export default function MentorValidasi() {
                         </td>
                         <td className="py-5 px-6 align-top text-center">
                           {log.bukti_kegiatan ? (
-                            <a href={log.bukti_kegiatan} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm">
+                            <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm cursor-pointer">
                               <span>🖼️</span> Lihat Bukti
-                            </a>
+                            </button>
                           ) : (
                             <span className="text-xs text-slate-400 italic bg-slate-50 px-2 py-1 rounded-md border border-slate-100">Tidak ada bukti</span>
                           )}

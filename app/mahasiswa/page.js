@@ -383,23 +383,42 @@ function MahasiswaDashboardContent() {
           </button>
         </div>
       ) : (
-        <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-emerald-500/10 to-teal-500/5 p-5 rounded-2xl border border-emerald-400/20 flex flex-col transition-all hover:shadow-md">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-xl shrink-0">
-              {absensiToday.status === 'hadir' ? '🚀' : absensiToday.status === 'sakit' ? '🤒' : '✈️'}
+        (() => {
+          const todayDate = new Date();
+          const localISOTime = new Date(todayDate.getTime() - todayDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          const hasLogbookToday = analisis?.recent_logs?.some(log => log.tanggal.startsWith(localISOTime));
+          const isPastNoon = todayDate.getHours() >= 12;
+
+          return (
+            <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-emerald-500/10 to-teal-500/5 p-5 rounded-2xl border border-emerald-400/20 flex flex-col transition-all hover:shadow-md">
+              <div className="flex items-center gap-3 mb-3 shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-xl shrink-0">
+                  {absensiToday.status === 'hadir' ? '🚀' : absensiToday.status === 'sakit' ? '🤒' : '✈️'}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 capitalize">Status: {absensiToday.status}</h3>
+                  <p className="text-[10px] font-bold text-slate-500">{new Date(absensiToday.waktu_checkin).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 flex-1 justify-between">
+                <div className="bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-200/50 dark:border-white/10">
+                  <p className="text-[9px] uppercase font-bold text-slate-400 mb-1">{absensiToday.status === 'hadir' ? '🎯 Target:' : '📄 Keterangan:'}</p>
+                  <p className="text-[11px] text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                    {absensiToday.status === 'hadir' ? absensiToday.rencana_kegiatan : absensiToday.alasan}
+                  </p>
+                </div>
+                {isPastNoon && !hasLogbookToday && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50 flex items-start gap-1.5 animate-in fade-in zoom-in duration-500">
+                    <span className="text-amber-500 text-[11px] mt-0.5">⚠️</span>
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 leading-snug">
+                      Waktu sudah lewat jam 12:00 siang. Jangan lupa simpan kegiatan harian di Logbook!
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 capitalize">Status: {absensiToday.status}</h3>
-              <p className="text-[10px] font-bold text-slate-500">{new Date(absensiToday.waktu_checkin).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
-            </div>
-          </div>
-          <div className="bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-200/50 dark:border-white/10 flex-1">
-            <p className="text-[9px] uppercase font-bold text-slate-400 mb-1">{absensiToday.status === 'hadir' ? '🎯 Target:' : '📄 Keterangan:'}</p>
-            <p className="text-[11px] text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
-              {absensiToday.status === 'hadir' ? absensiToday.rencana_kegiatan : absensiToday.alasan}
-            </p>
-          </div>
-        </div>
+          );
+        })()
       )}
     </div>
   );

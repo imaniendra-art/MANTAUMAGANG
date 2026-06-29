@@ -18,6 +18,15 @@ export async function GET(req) {
       return NextResponse.json(logs);
     }
 
+    // Admin: Tarik seluruh logbook untuk monitoring
+    if (role === 'admin') {
+      const logs = await Logbook.find({})
+        .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi' })
+        .populate({ path: 'pengajuan_id', select: 'detail_tempat posisi_id', populate: { path: 'posisi_id mitra_id' } })
+        .sort({ tanggal: -1 });
+      return NextResponse.json(logs);
+    }
+
     // Mentor: Tarik semua logbook yang menunggu validasi lapangan
     if (role === 'mentor') {
       const logs = await Logbook.find({ status_validasi: 'menunggu_mentor' })

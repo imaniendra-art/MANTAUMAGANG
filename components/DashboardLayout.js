@@ -157,6 +157,7 @@ const SUB_PAGE_TITLES = {
   "/admin/validasi": "Validasi dan Data Pengajuan",
   "/admin/master-data": "Manajemen Data",
   "/admin/settings": "Pengaturan",
+  "/admin/monitoring": "Monitoring Magang",
   "/mahasiswa/pengajuan": "Pengajuan Magang",
   "/mahasiswa/logbook": "Logbook Harian",
   "/mahasiswa/laporan": "Laporan & Sertifikat",
@@ -260,8 +261,9 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
 
       {/* ═══════════════ NAVBAR ═══════════════ */}
       <nav className="w-full px-8 lg:px-[5cm] py-5 flex justify-between items-center relative z-50">
-        <Link href="/" className="text-xl font-black tracking-wider text-slate-800 dark:text-slate-100">
-          MANTAU<span className="text-blue-500">MAGANG</span>
+        <Link href="/" className="flex items-center">
+          <img src="/mm.png" alt="Logo" className="h-[50px] block dark:hidden" />
+          <img src="/mm_white.png" alt="Logo" className="h-[50px] hidden dark:block" />
         </Link>
         <div className="flex items-center gap-5">
           <ThemeToggle toggleTheme={toggleTheme} isDark={isDark} />

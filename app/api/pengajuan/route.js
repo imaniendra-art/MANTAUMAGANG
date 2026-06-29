@@ -103,6 +103,8 @@ export async function GET(req) {
       const pengajuan = await PengajuanMagang.findOne({ mahasiswa_id: mhsId })
         .populate('paket_matkul_id')
         .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
+        .populate('mitra_id')
         .sort({ createdAt: -1 });
       return NextResponse.json(pengajuan || null);
     }
