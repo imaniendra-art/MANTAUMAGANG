@@ -1,0 +1,107 @@
+export const dynamic = 'force-dynamic';
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/db';
+import PengajuanMagang from '@/models/PengajuanMagang';
+import User from '@/models/User';
+import MitraMagang from '@/models/MitraMagang';
+import PosisiMagang from '@/models/PosisiMagang';
+import PaketMatkul from '@/models/PaketMatkul';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import bcrypt from 'bcryptjs';
+
+export async function GET(req) {
+  await dbConnect();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'dpl') {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const bimbinganList = await PengajuanMagang.find({ 
+      dpl_id: session.user.id, 
+      status_pengajuan: 'disetujui' 
+    })
+      .populate('mahasiswa_id', 'nama_lengkap nim_nidn nomor_hp email')
+      .populate('mitra_id')
+      .populate({
+        path: 'posisi_id',
+        populate: { path: 'mitra_id' }
+      })
+      .populate('mentor_id', 'nama_lengkap nomor_hp email')
+      .sort({ updatedAt: -1 });
+
+    return NextResponse.json(bimbinganList);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req) {
+  await dbConnect();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'dpl') {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { pengajuanId } = await req.json();
+    if (!pengajuanId) return NextResponse.json({ error: "Missing pengajuanId" }, { status: 400 });
+
+    const pengajuan = await PengajuanMagang.findOneAndUpdate(
+      { _id: pengajuanId, dpl_id: session.user.id },
+      { is_dpl_confirmed: true },
+      { new: true }
+    );
+
+    return NextResponse.json({ message: "Konfirmasi penyerahan berhasil", pengajuan });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req) {
+  await dbConnect();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'dpl') {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { pengajuanId, nama_lengkap, nomor_hp, email } = await req.json();
+
+    if (!pengajuanId || !nama_lengkap || !nomor_hp) {
+      return NextResponse.json({ error: "Nama dan Nomor HP wajib diisi" }, { status: 400 });
+    }
+
+    let mentorUser = await User.findOne({ nim_nidn: nomor_hp });
+    
+    if (!mentorUser) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(nomor_hp, salt);
+
+      mentorUser = await User.create({
+        nama_lengkap,
+        nim_nidn: nomor_hp, // Use phone number as ID/Username
+        email: email || `${nomor_hp}@mentor.com`, // Fallback dummy email if not provided
+        password: hashedPassword,
+        role: 'mentor',
+        nomor_hp,
+        isFirstLogin: true
+      });
+    }
+
+    const pengajuan = await PengajuanMagang.findOneAndUpdate(
+      { _id: pengajuanId, dpl_id: session.user.id },
+      { mentor_id: mentorUser._id },
+      { new: true }
+    ).populate('mentor_id', 'nama_lengkap nomor_hp email');
+
+    return NextResponse.json({ message: "Mentor berhasil ditugaskan", pengajuan });
+  } catch (error) {
+    if (error.code === 11000) {
+      return NextResponse.json({ error: "Nomor HP atau Email sudah terdaftar di sistem. Silakan gunakan yang lain." }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
