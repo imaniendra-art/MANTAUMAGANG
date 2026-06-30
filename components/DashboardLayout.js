@@ -141,6 +141,7 @@ const MENU_CONFIG = {
     menus: [
       { name: "Daftar Bimbingan", href: "/dpl/bimbingan", icon: "📋", desc: "Pantau dan konfirmasi penyerahan mahasiswa", color: "from-blue-500 to-indigo-600" },
       { name: "Validasi Logbook", href: "/dpl/validasi", icon: "✍️", desc: "Review dan validasi logbook harian mahasiswa", color: "from-emerald-500 to-teal-600" },
+      { name: "Validasi Laporan", href: "/dpl/validasi-laporan", icon: "📑", desc: "Persetujuan Laporan Akhir", color: "from-purple-500 to-purple-600" },
       { name: "Evaluasi Akhir", href: "/dpl/evaluasi", icon: "📊", desc: "Lakukan evaluasi akhir dan penilaian kinerja", color: "from-amber-500 to-orange-600" },
     ],
   },
@@ -162,6 +163,7 @@ const SUB_PAGE_TITLES = {
   "/mahasiswa/logbook": "Logbook Harian",
   "/mahasiswa/laporan": "Laporan & Sertifikat",
   "/dpl/validasi": "Validasi Logbook",
+  "/dpl/validasi-laporan": "Validasi Laporan Akhir",
   "/dpl/evaluasi": "Evaluasi Akhir",
   "/mentor/validasi": "Validasi Logbook",
 };
@@ -217,8 +219,8 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
       <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-900">
         <GridBackground isDark={isDark} />
         {/* Glow effects */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] blur-[120px] rounded-full pointer-events-none bg-blue-500/[0.03] dark:bg-blue-500/5" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] blur-[100px] rounded-full pointer-events-none bg-indigo-500/[0.03] dark:bg-indigo-500/5" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.06] dark:from-blue-500/10 to-transparent rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/[0.06] dark:from-indigo-500/10 to-transparent rounded-full pointer-events-none" />
 
         {/* Sticky Header */}
         <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800">
@@ -256,8 +258,8 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
     <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-900">
       <GridBackground isDark={isDark} />
       {/* Glow effects */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] blur-[120px] rounded-full pointer-events-none bg-blue-500/[0.04] dark:bg-blue-500/8" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] blur-[100px] rounded-full pointer-events-none bg-indigo-500/[0.03] dark:bg-indigo-500/6" />
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.08] dark:from-blue-500/15 to-transparent rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/[0.06] dark:from-indigo-500/10 to-transparent rounded-full pointer-events-none" />
 
       {/* ═══════════════ NAVBAR ═══════════════ */}
       <nav className="w-full px-8 lg:px-[5cm] py-5 flex justify-between items-center relative z-50">
@@ -285,8 +287,8 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
                <rect width="100%" height="100%" fill="url(#heroGrid)" />
              </svg>
           </div>
-          <div className="absolute -top-20 -right-20 w-60 h-60 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-500/10 blur-[60px] rounded-full pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-60 h-60 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/20 to-transparent rounded-full pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/20 to-transparent rounded-full pointer-events-none" />
 
           <div className="relative z-10">
             <div className="inline-block px-4 py-1.5 rounded-full border border-blue-400/30 dark:border-blue-400/20 bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-widest mb-4">
@@ -316,21 +318,21 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
           <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Menu Utama</h2>
         </div>
         <div className={`grid grid-cols-1 sm:grid-cols-2 ${config.menus.length >= 4 ? 'lg:grid-cols-4' : config.menus.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-5 lg:gap-6`}>
-          {config.menus.map((menu) => (
+          {config.menus.map((menu, index) => (
             <Link
               key={menu.href}
               href={menu.href}
-              className="group relative rounded-2xl p-7 lg:p-8 transition-all duration-500 hover:-translate-y-1 border bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl hover:bg-[#0F172A]/25 dark:hover:bg-slate-700/40 border-slate-200 dark:border-slate-700 hover:border-blue-400/40 dark:hover:border-blue-500/30 shadow-sm hover:shadow-xl dark:shadow-none dark:hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)]"
+              className="group relative rounded-2xl p-7 lg:p-8 transition-all duration-500 hover:-translate-y-1 border bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl hover:bg-[#0F172A]/25 dark:hover:bg-slate-700/40 border-slate-200 dark:border-slate-700 hover:border-blue-400/40 dark:hover:border-blue-500/30 shadow-sm hover:shadow-xl dark:shadow-none dark:hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)] transform-gpu will-change-transform"
             >
               {/* Menu card grid overlay (SVG) */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none rounded-2xl transition-opacity duration-500 overflow-hidden">
                  <svg className="w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
                    <defs>
-                     <pattern id="menuGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                     <pattern id={`menuGrid-${index}`} width="20" height="20" patternUnits="userSpaceOnUse">
                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke={isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)'} strokeWidth="1" />
                      </pattern>
                    </defs>
-                   <rect width="100%" height="100%" fill="url(#menuGrid)" />
+                   <rect width="100%" height="100%" fill={`url(#menuGrid-${index})`} />
                  </svg>
               </div>
 

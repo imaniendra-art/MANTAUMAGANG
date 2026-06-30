@@ -20,11 +20,18 @@ const LaporanAkhirSchema = new mongoose.Schema({
   file_pengantar: { type: String, default: '' },
   file_penerimaan: { type: String, default: '' },
   file_keterangan: { type: String, default: '' },
+  file_struktur_organisasi: { type: String, default: '' },
+  catatan_dpl: { type: String, default: '' },
   status: {
     type: String,
-    enum: ['draft', 'submitted'],
+    enum: ['draft', 'submitted', 'revisi', 'disetujui'],
     default: 'draft',
   }
 }, { timestamps: true });
 
-export default mongoose.models.LaporanAkhir || mongoose.model('LaporanAkhir', LaporanAkhirSchema);
+// Hapus model lama dari cache agar enum baru terbaca di Next.js dev server
+if (mongoose.models.LaporanAkhir) {
+  delete mongoose.models.LaporanAkhir;
+}
+
+export default mongoose.model('LaporanAkhir', LaporanAkhirSchema);

@@ -197,9 +197,19 @@ function DetailContent() {
           <div className="w-full lg:w-[400px] shrink-0">
             <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-xl sticky top-8">
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">Form Pendaftaran</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
                 Silakan unggah Curriculum Vitae (CV) Anda untuk melamar posisi ini.
               </p>
+
+              <div className="mb-8">
+                <Link href={`/mahasiswa/laporan/templates/pengantar?posisiId=${posisiId}`} target="_blank" className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 transition-colors">
+                  <div className="text-2xl">📨</div>
+                  <div>
+                    <div className="font-bold text-sm text-blue-800 dark:text-blue-300">Surat Pengantar Magang</div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400">Template Cetak & TTD</div>
+                  </div>
+                </Link>
+              </div>
 
               {isFull ? (
                 <div className="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-200 dark:border-red-800 text-center">

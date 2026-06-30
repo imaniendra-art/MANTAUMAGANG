@@ -11,7 +11,11 @@ export default withAuth(
     }
 
     if (path.startsWith('/mahasiswa') && token.role !== 'mahasiswa') {
-      return NextResponse.redirect(new URL('/login', req.url));
+      if (token.role === 'dpl' && path.startsWith('/mahasiswa/laporan/cetak/laporan')) {
+        // allow DPL to view
+      } else {
+        return NextResponse.redirect(new URL('/login', req.url));
+      }
     }
 
     if (token.role === 'mahasiswa') {

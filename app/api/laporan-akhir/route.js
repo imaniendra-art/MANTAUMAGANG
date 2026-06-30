@@ -1,29 +1,47 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import dbConnect from '@/lib/db';
 import PengajuanMagang from '@/models/PengajuanMagang';
 import LaporanAkhir from '@/models/LaporanAkhir';
 import PaketMatkul from '@/models/PaketMatkul';
 import MitraMagang from '@/models/MitraMagang';
-
-// Ensure DB is connected
-const MONGODB_URI = process.env.MONGODB_URI;
-if (!mongoose.connection.readyState) {
-  mongoose.connect(MONGODB_URI);
-}
+import Logbook from '@/models/Logbook';
 
 export async function GET(request) {
+  await dbConnect();
   try {
     const { searchParams } = new URL(request.url);
     const mhsId = searchParams.get('mhsId');
+    const role = searchParams.get('role');
+    const dplId = searchParams.get('dplId');
 
+    // Jika dipanggil oleh DPL
+    if (role === 'dpl' && dplId) {
+      // Cari semua pengajuan bimbingan DPL tersebut
+      const pengajuans = await PengajuanMagang.find({ dpl_id: dplId }).select('_id');
+      const pengajuanIds = pengajuans.map(p => p._id);
+
+      // Cari semua laporan akhir yang statusnya bukan draft
+      const laporans = await LaporanAkhir.find({ 
+        pengajuan_id: { $in: pengajuanIds },
+        status: { $in: ['submitted', 'revisi', 'disetujui'] }
+      })
+      .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi' })
+      .populate({ path: 'pengajuan_id', select: 'mitra_id detail_tempat posisi_id', populate: { path: 'posisi_id mitra_id' } })
+      .sort({ updatedAt: -1 });
+
+      return NextResponse.json(laporans);
+    }
+
+    // Jika dipanggil oleh Mahasiswa
     if (!mhsId) {
       return NextResponse.json({ error: "Missing mhsId" }, { status: 400 });
     }
 
     const pengajuan = await PengajuanMagang.findOne({ mahasiswa_id: mhsId, status_pengajuan: 'disetujui' })
       .populate('paket_matkul_id')
-      .populate('mitra_id');
+      .populate('mitra_id')
+      .populate('mahasiswa_id');
     if (!pengajuan) {
       return NextResponse.json({ error: "Pengajuan tidak ditemukan atau belum disetujui" }, { status: 404 });
     }
@@ -36,7 +54,9 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json({ laporan, pengajuan });
+    const logbooks = await Logbook.find({ pengajuan_id: pengajuan._id }).sort({ tanggal: 1 });
+
+    return NextResponse.json({ laporan, pengajuan, logbooks });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -44,6 +64,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  await dbConnect();
   try {
     const data = await request.json();
     const { 
@@ -57,6 +78,7 @@ export async function POST(request) {
       file_pengantar,
       file_penerimaan,
       file_keterangan,
+      file_struktur_organisasi,
       status
     } = data;
 
@@ -81,6 +103,7 @@ export async function POST(request) {
       laporan.file_pengantar = file_pengantar ?? laporan.file_pengantar;
       laporan.file_penerimaan = file_penerimaan ?? laporan.file_penerimaan;
       laporan.file_keterangan = file_keterangan ?? laporan.file_keterangan;
+      laporan.file_struktur_organisasi = file_struktur_organisasi ?? laporan.file_struktur_organisasi;
       laporan.status = status ?? laporan.status;
       await laporan.save();
     } else {
@@ -97,10 +120,39 @@ export async function POST(request) {
         file_pengantar,
         file_penerimaan,
         file_keterangan,
+        file_struktur_organisasi,
         status: status || 'draft'
       });
     }
 
+    return NextResponse.json(laporan);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  await dbConnect();
+  try {
+    const data = await request.json();
+    const { id, status, catatan_dpl } = data;
+
+    if (!id || !status) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const laporan = await LaporanAkhir.findById(id);
+    if (!laporan) {
+      return NextResponse.json({ error: "Laporan not found" }, { status: 404 });
+    }
+
+    laporan.status = status;
+    if (catatan_dpl !== undefined) {
+      laporan.catatan_dpl = catatan_dpl;
+    }
+
+    await laporan.save();
     return NextResponse.json(laporan);
   } catch (error) {
     console.error(error);
