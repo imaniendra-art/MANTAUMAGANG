@@ -30,7 +30,7 @@ export default function LaporanAkhirPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch(`/api/laporan-akhir?mhsId=${session.user.id}`);
+      const res = await fetch(`/api/laporan-akhir?mhsId=${session.user.id}&_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) {
         setLoading(false);
         return;
@@ -60,7 +60,9 @@ export default function LaporanAkhirPage() {
       openDate.setDate(openDate.getDate() - 14); // Buka H-14
       const now = new Date();
 
-      if (now < openDate) {
+      if (data.pengajuan.is_laporan_unlocked) {
+        setIsLocked(false);
+      } else if (now < openDate) {
         setIsLocked(true);
         const diffTime = Math.abs(openDate - now);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

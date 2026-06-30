@@ -49,6 +49,27 @@ export default function DaftarBimbinganPage() {
     }
   };
 
+  const handleToggleLaporan = async (id, currentStatus) => {
+    const actionText = currentStatus ? "mengunci kembali" : "membuka paksa";
+    if (!confirm(`Apakah Anda yakin ingin ${actionText} akses laporan mahasiswa ini?`)) return;
+    
+    try {
+      const res = await fetch("/api/dpl/toggle-laporan", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pengajuanId: id, isUnlocked: !currentStatus })
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert("Gagal mengubah status laporan");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan sistem");
+    }
+  };
+
   const handleAddMentor = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -178,10 +199,21 @@ export default function DaftarBimbinganPage() {
                         </td>
                         <td className="px-6 py-4 align-middle text-center">
                           {item.is_dpl_confirmed ? (
-                            <div className="flex flex-col items-center gap-1">
+                            <div className="flex flex-col items-center gap-2">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-500/30">
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Terkonfirmasi
                               </span>
+                              
+                              <button
+                                onClick={() => handleToggleLaporan(item._id, item.is_laporan_unlocked)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold w-full max-w-[140px] border transition-all ${
+                                  item.is_laporan_unlocked
+                                    ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400"
+                                    : "bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400"
+                                }`}
+                              >
+                                {item.is_laporan_unlocked ? "🔒 Kunci Laporan" : "🔓 Buka Laporan"}
+                              </button>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-2">

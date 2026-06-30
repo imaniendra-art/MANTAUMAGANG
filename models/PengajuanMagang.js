@@ -60,6 +60,10 @@ const PengajuanMagangSchema = new mongoose.Schema({
   nilai_akhir_mutlak: { type: Number },
   catatan_evaluasi: { type: String },
   alasan_penolakan: { type: String },
+  is_laporan_unlocked: {
+    type: Boolean,
+    default: false,
+  }
 }, { timestamps: true });
 
 export default mongoose.models.PengajuanMagang || mongoose.model('PengajuanMagang', PengajuanMagangSchema);
