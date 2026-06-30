@@ -82,7 +82,7 @@ export default function LaporanAkhirPage() {
     if (session?.user?.id) {
       fetchData();
     }
-  }, [session]);
+  }, [session?.user?.id]);
 
   const handleSave = async (submitFinal = false) => {
     setIsSaving(true);
