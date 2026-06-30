@@ -25,6 +25,29 @@ export async function GET(req) {
     const posisi = await PosisiMagang.find(query)
       .populate('mitra_id', 'nama_instansi jenis_skema alamat')
       .sort({ createdAt: -1 });
+
+    const isPublic = searchParams.get('public') === 'true';
+    if (isPublic) {
+      const PengajuanMagang = (await import('@/models/PengajuanMagang')).default;
+      const pengajuans = await PengajuanMagang.find({ 
+        status_pengajuan: 'disetujui',
+        is_dpl_confirmed: true 
+      });
+
+      const filledCounts = {};
+      pengajuans.forEach(p => {
+        if (p.posisi_id) {
+          filledCounts[p.posisi_id] = (filledCounts[p.posisi_id] || 0) + 1;
+        }
+      });
+
+      const availablePosisi = posisi.filter(pos => {
+        const filled = filledCounts[pos._id] || 0;
+        return filled < pos.kuota;
+      });
+
+      return NextResponse.json(availablePosisi);
+    }
       
     return NextResponse.json(posisi);
   } catch (error) {

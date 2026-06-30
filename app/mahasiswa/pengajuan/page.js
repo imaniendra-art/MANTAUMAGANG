@@ -21,7 +21,7 @@ export default function PengajuanMagangPage() {
     const fetchData = async () => {
       try {
         const [posisiRes, pengajuanRes] = await Promise.all([
-          fetch('/api/posisi'),
+          fetch('/api/posisi?public=true'),
           fetch(`/api/pengajuan?mhsId=${session?.user?.id}`)
         ]);
         

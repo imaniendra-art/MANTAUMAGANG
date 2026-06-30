@@ -3,9 +3,12 @@ import dbConnect from '@/lib/db';
 import MitraMagang from '@/models/MitraMagang';
 import PosisiMagang from '@/models/PosisiMagang'; // for cascade delete
 
-export async function GET() {
+export async function GET(req) {
   await dbConnect();
   try {
+    const { searchParams } = new URL(req.url);
+    const isPublic = searchParams.get('public') === 'true';
+
     const mitra = await MitraMagang.aggregate([
       {
         $lookup: {
@@ -17,6 +20,33 @@ export async function GET() {
       },
       { $sort: { createdAt: -1 } }
     ]);
+
+    if (isPublic) {
+      // Check filled quotas
+      const PengajuanMagang = (await import('@/models/PengajuanMagang')).default;
+      const pengajuans = await PengajuanMagang.find({ 
+        status_pengajuan: 'disetujui',
+        is_dpl_confirmed: true 
+      });
+
+      const filledCounts = {};
+      pengajuans.forEach(p => {
+        if (p.posisi_id) {
+          filledCounts[p.posisi_id] = (filledCounts[p.posisi_id] || 0) + 1;
+        }
+      });
+
+      const filteredMitra = mitra.map(m => {
+        m.posisi_list = m.posisi_list.filter(pos => {
+          const filled = filledCounts[pos._id] || 0;
+          return filled < pos.kuota;
+        });
+        return m;
+      }).filter(m => m.posisi_list.length > 0);
+
+      return NextResponse.json(filteredMitra);
+    }
+
     return NextResponse.json(mitra);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

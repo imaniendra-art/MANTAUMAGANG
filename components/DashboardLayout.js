@@ -99,7 +99,7 @@ function UserMenu({ nama, role }) {
           </Link>
           <div className="h-px bg-slate-200 dark:bg-slate-700"></div>
           <button 
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => signOut({ callbackUrl: '/' })}
             className="flex items-center gap-3 w-full text-left px-4 py-3.5 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             🚪 Keluar

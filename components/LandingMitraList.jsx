@@ -20,7 +20,7 @@ export default function LandingMitraList() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch('/api/mitra');
+        const res = await fetch('/api/mitra?public=true');
         const data = await res.json();
         setMitra(data);
       } catch (error) {
