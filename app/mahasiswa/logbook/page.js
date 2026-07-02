@@ -47,7 +47,11 @@ export default function LogbookPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [achievementToast, setAchievementToast] = useState(null);
   const [showMisi, setShowMisi] = useState(false); // State for Accordion Misi Magang
+  const [expandedCpmk, setExpandedCpmk] = useState({});
 
+  const toggleCpmk = (id) => {
+    setExpandedCpmk(prev => ({ ...prev, [id]: !prev[id] }));
+  };
   const fetchData = useCallback(async () => {
     if (!session?.user?.id) return;
     setLoading(true);
@@ -406,9 +410,9 @@ export default function LogbookPage() {
               <div className="space-y-4">
                 {logbooks.map(log => (
                   <div key={log._id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
                           {new Date(log.tanggal).getDate()}
                         </div>
                         <div>
@@ -416,7 +420,27 @@ export default function LogbookPage() {
                           <p className="text-xs text-slate-500 font-medium mt-0.5">Disubmit pada {new Date(log.createdAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
                       </div>
-                      {getStatusBadge(log.status_validasi)}
+                      
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {log.bukti_kegiatan && (
+                          <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shadow-sm cursor-pointer">
+                            <span>🖼️</span> Bukti File
+                          </button>
+                        )}
+                        {log.bukti_link && (
+                          <a href={log.bukti_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-lg hover:bg-sky-100 transition-colors shadow-sm">
+                            <span>🔗</span> Link Bukti
+                          </a>
+                        )}
+                        <button 
+                          onClick={() => toggleCpmk(log._id)}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm cursor-pointer"
+                        >
+                          <span>🎯</span> Capaian
+                        </button>
+                        <div className="w-[1px] h-6 bg-slate-200 mx-1 hidden sm:block"></div>
+                        {getStatusBadge(log.status_validasi)}
+                      </div>
                     </div>
                     
                     {log.status_validasi === 'revisi' && log.catatan_revisi && (
@@ -433,52 +457,54 @@ export default function LogbookPage() {
 
                     <p className="text-slate-700 text-sm mt-4 leading-relaxed">{log.deskripsi_kegiatan}</p>
                     
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <details className="group flex-1">
-                          <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors list-none select-none w-max">
-                            <span className="group-open:rotate-90 transition-transform duration-200">▶</span>
-                            Lihat Capaian Target CPMK
-                          </summary>
-                          <div className="mt-3 flex flex-col gap-2 items-start pl-2">
-                            {log.matched_indicators && log.matched_indicators.length > 0 ? (
-                              log.matched_indicators.map((ind, i) => (
-                                <div key={i} className="flex gap-2 items-start mb-1">
-                                  <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded shrink-0">CPMK Terpenuhi</span>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs text-slate-700 font-bold bg-slate-100 px-2 py-1 rounded break-words">
-                                      {ind.matkul_nama ? <span className="text-indigo-600 mr-1">[{ind.matkul_kode} {ind.matkul_nama}]</span> : null}
-                                      {ind.nama_cpmk}
-                                    </p>
-                                    <p className="text-xs text-slate-500 mt-1 italic break-words">&quot;{ind.indikator}&quot;</p>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="flex gap-2 items-start">
-                                <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded mt-0.5">💡 Tidak Memenuhi Target CPMK</span>
-                                <span className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Kegiatan ini bersifat rutinitas biasa.</span>
-                              </div>
-                            )}
-                          </div>
-                        </details>
-                        
-                        <div className="flex flex-wrap gap-4 shrink-0 mt-0.5">
-                          {log.bukti_kegiatan && (
-                            <div className="flex gap-2 items-center">
-                              <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">File Bukti</span>
-                              <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="text-xs font-bold text-blue-600 hover:underline cursor-pointer">Lihat Bukti (File)</button>
+                    {expandedCpmk[log._id] && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                          {log.status_validasi === 'menunggu_mentor' || log.status_validasi === 'revisi' ? (
+                            <div className="flex gap-3 items-center bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 w-full max-w-md">
+                              <span className="text-lg">🔒</span>
+                              <span className="text-xs text-slate-600 font-bold leading-relaxed">Menunggu evaluasi dari mentor untuk membuka daftar capaian kegiatan ini.</span>
                             </div>
-                          )}
-                          {log.bukti_link && (
-                            <div className="flex gap-2 items-center">
-                              <span className="text-xs font-bold bg-sky-50 text-sky-600 px-2 py-1 rounded">Link Bukti</span>
-                              <a href={log.bukti_link} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 hover:underline truncate max-w-xs">{log.bukti_link}</a>
+                          ) : log.matched_indicators && log.matched_indicators.length > 0 ? (
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 w-full">
+                              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi
+                              </p>
+                              <div className="space-y-3">
+                                {log.matched_indicators.map((ind, idx) => (
+                                  <div key={idx} className="flex gap-2.5 items-start">
+                                    <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
+                                    <div>
+                                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">
+                                        {ind.matkul_nama ? <span className="text-indigo-600 mr-1">[{ind.matkul_kode} {ind.matkul_nama}]</span> : null}
+                                        {ind.nama_cpmk}
+                                      </p>
+                                      <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
+                                      {ind.alasan && (
+                                        <div className="mt-1.5 p-2 bg-indigo-100/50 dark:bg-indigo-900/30 rounded border border-indigo-200/50 dark:border-indigo-800/50">
+                                          <p className="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                                            <span className="font-bold text-indigo-700 dark:text-indigo-400 mr-1">Analisis Kegiatan:</span>
+                                            {ind.alasan}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start w-full">
+                              <span className="text-amber-500">💡</span>
+                              <div>
+                                <p className="text-[10px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-0.5">
+                                  Tidak Memenuhi Target CPMK
+                                </p>
+                                <p className="text-[11px] text-amber-600 dark:text-amber-400/80 leading-relaxed mt-1">Kegiatan ini bersifat rutinitas. Coba diskusikan dengan Mentor untuk tugas yang lebih menantang esok hari.</p>
+                              </div>
                             </div>
                           )}
                         </div>
-                      </div>
-                      
+                      )}
                       {log.status_validasi === 'revisi' && (
                         <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
                           <button
@@ -490,7 +516,6 @@ export default function LogbookPage() {
                         </div>
                       )}
                     </div>
-                  </div>
                 ))}
               </div>
             )}

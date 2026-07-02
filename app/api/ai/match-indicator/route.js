@@ -54,14 +54,14 @@ export async function POST(req) {
     }
 
     // Build Prompt for Gemini
-    const prompt = `Anda adalah Asisten Penilai Magang yang BIJAKSANA dan PENGERTIAN.
-Tugas Anda adalah mencocokkan deskripsi kegiatan harian mahasiswa dengan indikator Capaian Pembelajaran (CPMK). Seringkali bahasa lapangan berbeda dengan bahasa akademik/dosen. Tugas utama Anda adalah mencari "Semantic Matching" (Kesamaan Makna) antara apa yang dikerjakan mahasiswa dengan apa yang ditargetkan indikator.
+    const prompt = `Anda adalah Asisten Penilai Magang yang BIJAKSANA namun OBJEKTIF.
+Tugas Anda adalah mencocokkan deskripsi kegiatan harian mahasiswa dengan indikator Capaian Pembelajaran (CPMK). Tugas utama Anda adalah mencari "Semantic Matching" (Kesamaan Makna) antara apa yang dikerjakan mahasiswa dengan apa yang ditargetkan indikator.
 
-PANDUAN PENILAIAN FLEKSIBEL:
-1. CARI BENANG MERAH MAKNA: Jika mahasiswa "ngobrol", "meeting", "berkenalan", "duduk di ruang rapat", ini bisa dihubungkan ke indikator yang berkaitan dengan "komunikasi", "koordinasi", atau "observasi budaya/struktur organisasi". 
-2. BERIKAN REWARD: Jangan kaku! Mahasiswa sedang belajar. Kegiatan sederhana seperti "keliling kantor" atau "orientasi divisi" sangat berharga dan bisa dimasukkan ke dalam kategori "observasi alur kerja" atau "identifikasi masalah".
-3. JIKA ADA SARAN KEGIATAN: Indikator mungkin dilengkapi dengan [Saran Kegiatan]. Jadikan saran ini sebagai pedoman. Jika kegiatan mahasiswa mirip dengan saran tersebut, langsung loloskan!
-4. EVALUASI POSITIF: Usahakan sebisa mungkin untuk mencarikan minimal 1 indikator yang paling relevan untuk menghargai usaha mahasiswa, kecuali kegiatannya benar-benar sangat tidak berhubungan (misal: "saya tidur seharian").
+PANDUAN PENILAIAN KETAT:
+1. MAKSIMAL 3 INDIKATOR: Pilih HANYA MAKSIMAL 3 indikator yang PALING RELEVAN dengan kegiatan hari tersebut. Jangan serakah, pilih yang paling kuat keterkaitannya.
+2. BERIKAN ALASAN SPESIFIK: Untuk setiap indikator yang dipilih, Anda WAJIB memberikan "alasan" mengapa kegiatan tersebut memenuhi indikator itu. Alasan harus secara eksplisit mengutip bagian dari kegiatan mahasiswa yang relevan.
+Contoh: "Berdasarkan kegiatan 'mengetik laporan keuangan', mahasiswa telah mempraktikkan keterampilan teknis administrasi."
+3. Jika kegiatan sangat tidak berhubungan (misal: "saya tidur seharian"), jangan pilih indikator apapun.
 
 DAFTAR INDIKATOR:
 ${allIndicators.map((ind, i) => `[ID: ${i}] CPMK: ${ind.nama_cpmk} | Indikator Utama: ${ind.indikator} ${ind.saran_kegiatan ? `| Saran Kegiatan (Bahasa Lapangan): ${ind.saran_kegiatan}` : ''}`).join('\n')}
@@ -69,8 +69,12 @@ ${allIndicators.map((ind, i) => `[ID: ${i}] CPMK: ${ind.nama_cpmk} | Indikator U
 DESKRIPSI KEGIATAN MAHASISWA (Bahasa Lapangan):
 "${deskripsi_kegiatan}"
 
-Keluarkan hasil analisis Anda HANYA dalam format JSON valid berupa array angka ID indikator yang cocok secara semantik. 
-Contoh output jika cocok dengan ID 1 dan 3: [1, 3]
+Keluarkan hasil analisis Anda HANYA dalam format JSON array yang valid. Setiap elemen array adalah sebuah object dengan key "id" (angka ID indikator) dan "alasan" (penjelasan singkat maksimal 2 kalimat).
+Contoh output jika cocok:
+[
+  { "id": 1, "alasan": "Berdasarkan kegiatan 'memperkenalkan diri', mahasiswa menunjukkan kemampuan komunikasi awal." },
+  { "id": 3, "alasan": "Tindakan 'membantu mengerjakan laporan' menunjukkan partisipasi dalam tugas teknis." }
+]
 Contoh output jika tidak ada yang cocok: []
 Jangan tambahkan teks apapun selain array JSON tersebut.`;
 
@@ -81,23 +85,26 @@ Jangan tambahkan teks apapun selain array JSON tersebut.`;
     const response = await result.response;
     const textResult = response.text();
     
-    let matchedIndexes = [];
+    let matchedData = [];
     try {
-      matchedIndexes = JSON.parse(textResult);
+      matchedData = JSON.parse(textResult);
     } catch (e) {
       console.error("Gagal parse output AI:", textResult);
     }
 
     const matchedIndicators = [];
-    if (Array.isArray(matchedIndexes)) {
-      matchedIndexes.forEach(i => {
-        if (allIndicators[i]) {
-          matchedIndicators.push(allIndicators[i]);
+    if (Array.isArray(matchedData)) {
+      matchedData.forEach(item => {
+        if (item && typeof item.id === 'number' && allIndicators[item.id]) {
+          matchedIndicators.push({
+            ...allIndicators[item.id],
+            alasan: item.alasan || "Relevan dengan kegiatan mahasiswa."
+          });
         }
       });
     }
 
-    return NextResponse.json({ matched: matchedIndicators });
+    return NextResponse.json({ matched: matchedIndicators.slice(0, 3) });
 
   } catch (error) {
     console.error("AI Error:", error);

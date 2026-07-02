@@ -69,7 +69,7 @@ export async function POST(req) {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const defaultPassword = nomor_hp || nim_nidn;
+    const defaultPassword = role === 'mentor' ? nomor_hp : nim_nidn;
     const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
     const newUser = await User.create({
@@ -77,7 +77,7 @@ export async function POST(req) {
       nim_nidn,
       nidn,
       nomor_hp,
-      email: `${nim_nidn}@mantau.local`, // Auto-generate required email
+      email: data.email || `${nim_nidn}@mantau.local`, // Use provided email or fallback
       password: hashedPassword,
       role: role || 'dpl',
       isFirstLogin: true,
@@ -102,7 +102,7 @@ export async function PATCH(req) {
       if (!user) return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
       
       const salt = await bcrypt.genSalt(10);
-      const defaultPassword = user.nomor_hp || user.nim_nidn;
+      const defaultPassword = user.role === 'mentor' ? user.nomor_hp : user.nim_nidn;
       const hashedPassword = await bcrypt.hash(defaultPassword, salt);
       
       user.password = hashedPassword;

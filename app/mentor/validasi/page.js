@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useSession } from "next-auth/react";
 
 export default function MentorValidasi() {
+  const { data: session } = useSession();
   const [logbooks, setLogbooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
@@ -13,13 +15,18 @@ export default function MentorValidasi() {
   const [selectedLogId, setSelectedLogId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [expandedCpmk, setExpandedCpmk] = useState({});
+
+  const toggleCpmk = (id) => {
+    setExpandedCpmk(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [antreanRes, historiRes] = await Promise.all([
-        fetch('/api/logbook?role=mentor'),
-        fetch('/api/logbook?role=mentor_histori')
+        fetch(`/api/logbook?role=mentor&userId=${session.user.id}`),
+        fetch(`/api/logbook?role=mentor_histori&userId=${session.user.id}`)
       ]);
       const antreanData = await antreanRes.json();
       const historiData = await historiRes.json();
@@ -34,14 +41,16 @@ export default function MentorValidasi() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     const load = async () => {
       await fetchData();
     };
-    load();
-  }, [fetchData]);
+    if (session?.user?.id) {
+      fetchData();
+    }
+  }, [fetchData, session]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -152,110 +161,128 @@ export default function MentorValidasi() {
           {/* Table Card */}
           <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse table-fixed">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <th className="py-4 px-6 whitespace-nowrap w-48">Mahasiswa & Tgl</th>
-                    <th className="py-4 px-6">Deskripsi Kegiatan</th>
-                    <th className="py-4 px-6 text-center w-32">Bukti</th>
-                    <th className="py-4 px-6 text-right w-64">{activeTab === 'antrean' ? 'Aksi' : 'Status Terakhir'}</th>
+                    <th className="py-4 px-6 whitespace-nowrap w-[20%]">Mahasiswa & Tgl</th>
+                    <th className="py-4 px-6 w-[55%]">Deskripsi Kegiatan</th>
+                    <th className="py-4 px-6 text-right w-[25%]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   {logbooks.filter(log => activeTab === 'antrean' ? log.status_validasi === 'menunggu_mentor' : log.status_validasi !== 'menunggu_mentor').length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
+                      <td colSpan="3" className="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
                         <div className="text-4xl mb-3">{activeTab === 'antrean' ? '🎉' : '📭'}</div>
                         {activeTab === 'antrean' ? 'Tidak ada logbook menunggu validasi lapangan Anda.' : 'Belum ada riwayat logbook yang Anda validasi/revisi.'}
                       </td>
                     </tr>
                   ) : (
                     logbooks.filter(log => activeTab === 'antrean' ? log.status_validasi === 'menunggu_mentor' : log.status_validasi !== 'menunggu_mentor').map((log) => (
-                      <tr key={log._id} className="hover:bg-white dark:bg-slate-800 shadow-sm transition-colors">
-                        <td className="py-5 px-6 align-top">
-                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{log.mahasiswa_id?.nama_lengkap}</p>
-                          <p className="text-xs font-semibold text-slate-500 mt-1 bg-slate-100 dark:bg-slate-800 w-fit px-2 py-1 rounded-md">{new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                        </td>
-                        <td className="py-5 px-6 align-top">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed">{log.deskripsi_kegiatan}</p>
-                          <details className="mt-4 group">
-                            <summary className="cursor-pointer text-[11px] font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 select-none flex items-center gap-1.5 w-fit bg-indigo-50/50 hover:bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-full transition-colors border border-indigo-100 dark:border-indigo-800/30">
-                              <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
-                              Lihat Capaian Target CPMK
-                            </summary>
-                            <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                              {log.matched_indicators && log.matched_indicators.length > 0 ? (
-                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                                  <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                    <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi
-                                  </p>
-                                  <div className="space-y-3">
-                                    {log.matched_indicators.map((ind, idx) => (
-                                      <div key={idx} className="flex gap-2.5 items-start">
-                                        <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
-                                        <div>
-                                          <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">{ind.nama_cpmk}</p>
-                                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
+                      <React.Fragment key={log._id}>
+                        <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="py-4 px-6 align-top">
+                            <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{log.mahasiswa_id?.nama_lengkap}</p>
+                            <p className="text-xs font-semibold text-slate-500 mt-1 bg-slate-100 dark:bg-slate-800 w-fit px-2 py-1 rounded-md">{new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          </td>
+                          <td className="py-4 px-6 align-top">
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed">{log.deskripsi_kegiatan}</p>
+                          </td>
+                          <td className="py-4 px-6 align-top text-right">
+                            <div className="flex flex-col items-end gap-3">
+                              {/* Action Buttons */}
+                              <div className="flex flex-wrap justify-end gap-2">
+                                {log.bukti_kegiatan && (
+                                  <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm cursor-pointer">
+                                    <span>🖼️</span> Bukti
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => toggleCpmk(log._id)}
+                                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap shadow-sm cursor-pointer"
+                                >
+                                  <span>🎯</span> Capaian
+                                </button>
+                              </div>
+
+                              {/* Validation Status / Actions */}
+                              {activeTab === 'antrean' ? (
+                                <div className="flex gap-2 mt-1">
+                                  <button 
+                                    onClick={() => handleValidasi(log._id, 'divalidasi_mentor')}
+                                    disabled={submitting}
+                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap disabled:opacity-50"
+                                  >
+                                    ✅ Validasi
+                                  </button>
+                                  <button 
+                                    onClick={() => openRejectModal(log._id)}
+                                    disabled={submitting}
+                                    className="px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap disabled:opacity-50"
+                                  >
+                                    ❌ Revisi
+                                  </button>
                                 </div>
                               ) : (
-                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start">
-                                  <span className="text-amber-500">💡</span>
-                                  <div>
-                                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-0.5">
-                                      Tidak Memenuhi Target CPMK
+                                <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border shadow-sm inline-flex items-center gap-1.5 ${
+                                  log.status_validasi === 'revisi' 
+                                    ? 'text-rose-600 bg-rose-50 border-rose-200' 
+                                    : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                }`}>
+                                  <span>{log.status_validasi === 'revisi' ? '❌' : '✅'}</span>
+                                  {log.status_validasi === 'revisi' ? 'Direvisi' : 'Divalidasi'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {/* Expandable CPMK Row */}
+                        {expandedCpmk[log._id] && (
+                          <tr className="border-b border-slate-100 dark:border-slate-700/50">
+                            <td colSpan="3" className="px-6 pb-5 pt-0">
+                              <div className="animate-in fade-in slide-in-from-top-2 duration-200 w-full">
+                                {log.matched_indicators && log.matched_indicators.length > 0 ? (
+                                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                    <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                      <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi
                                     </p>
-                                    <p className="text-[11px] text-amber-600 dark:text-amber-400/80 leading-relaxed mt-1">Kegiatan ini bersifat rutinitas. Mohon arahkan mahasiswa untuk melakukan variasi tugas lain agar target magang tercapai.</p>
+                                    <div className="space-y-3">
+                                      {log.matched_indicators.map((ind, idx) => (
+                                        <div key={idx} className="flex gap-2.5 items-start">
+                                          <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
+                                          <div>
+                                            <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">{ind.nama_cpmk}</p>
+                                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
+                                            {ind.alasan && (
+                                              <div className="mt-1.5 p-2 bg-indigo-100/50 dark:bg-indigo-900/30 rounded border border-indigo-200/50 dark:border-indigo-800/50">
+                                                <p className="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                                                  <span className="font-bold text-indigo-700 dark:text-indigo-400 mr-1">Analisis Kegiatan:</span>
+                                                  {ind.alasan}
+                                                </p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          </details>
-                        </td>
-                        <td className="py-5 px-6 align-top text-center">
-                          {log.bukti_kegiatan ? (
-                            <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm cursor-pointer">
-                              <span>🖼️</span> Lihat Bukti
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-400 italic bg-slate-50 px-2 py-1 rounded-md border border-slate-100">Tidak ada bukti</span>
-                          )}
-                        </td>
-                        <td className="py-5 px-6 align-top text-right">
-                          {activeTab === 'antrean' ? (
-                            <div className="flex flex-col xl:flex-row justify-end gap-2">
-                              <button 
-                                onClick={() => openRejectModal(log._id)}
-                                className="px-4 py-2 border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap"
-                              >
-                                Minta Revisi
-                              </button>
-                              <button 
-                                onClick={() => handleValidasi(log._id, 'divalidasi_mentor')}
-                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap"
-                              >
-                                Validasi Faktanya
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex justify-end">
-                              {log.status_validasi === 'revisi' && (
-                                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 shadow-sm inline-flex items-center gap-1.5">
-                                  <span>❌</span> Diminta Revisi
-                                </span>
-                              )}
-                              {(log.status_validasi === 'divalidasi_mentor' || log.status_validasi === 'divalidasi_dpl') && (
-                                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm inline-flex items-center gap-1.5">
-                                  <span>✅</span> Divalidasi Lapangan
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
+                                ) : (
+                                  <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start">
+                                    <span className="text-amber-500">💡</span>
+                                    <div>
+                                      <p className="text-[10px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-0.5">
+                                        Tidak Memenuhi Target CPMK
+                                      </p>
+                                      <p className="text-[11px] text-amber-600 dark:text-amber-400/80 leading-relaxed mt-1">Kegiatan ini bersifat rutinitas. Mohon arahkan mahasiswa untuk melakukan variasi tugas lain agar target magang tercapai.</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))
                   )}
                 </tbody>

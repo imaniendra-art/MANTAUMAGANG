@@ -22,7 +22,8 @@ const LogbookSchema = new mongoose.Schema({
   matched_indicators: [{
     cpmk_id: String,
     nama_cpmk: String,
-    indikator: String
+    indikator: String,
+    alasan: String
   }],
   bukti_kegiatan: { // untuk foto
     type: String,

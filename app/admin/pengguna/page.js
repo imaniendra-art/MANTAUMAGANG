@@ -18,12 +18,7 @@ export default function ManajemenPenggunaPage() {
   // Add User Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
-  const [addForm, setAddForm] = useState({
-    nim_nidn: "",
-    nidn: "",
-    nama_lengkap: "",
-    nomor_hp: ""
-  });
+  const [addForm, setAddForm] = useState({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "" });
 
   // Edit User Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -34,6 +29,7 @@ export default function ManajemenPenggunaPage() {
     nidn: "",
     nama_lengkap: "",
     nomor_hp: "",
+    email: "",
     program_studi: "",
     konsentrasi: "",
     kegiatan: ""
@@ -194,7 +190,7 @@ export default function ManajemenPenggunaPage() {
       } else {
         alert("Pengguna berhasil ditambahkan. Password default sama dengan NIM/ID.");
         setShowAddModal(false);
-        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "" });
+        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "" });
         fetchUsers(activeTab);
       }
     } catch (error) {
@@ -211,6 +207,7 @@ export default function ManajemenPenggunaPage() {
       nidn: user.nidn || "",
       nama_lengkap: user.nama_lengkap || "",
       nomor_hp: user.nomor_hp || "",
+      email: user.email || "",
       program_studi: user.program_studi || "",
       konsentrasi: user.konsentrasi || "",
       kegiatan: user.kegiatan || ""
@@ -727,6 +724,18 @@ export default function ManajemenPenggunaPage() {
                   placeholder="0812xxxxxxx"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Email
+                </label>
+                <input 
+                  type="email" 
+                  value={addForm.email}
+                  onChange={(e) => setAddForm({...addForm, email: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  placeholder="opsional@email.com"
+                />
+              </div>
               <div className="mt-8 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-6">
                 <button 
                   type="button" 
@@ -804,6 +813,17 @@ export default function ManajemenPenggunaPage() {
                   type="text" 
                   value={editForm.nomor_hp}
                   onChange={(e) => setEditForm({...editForm, nomor_hp: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Email
+                </label>
+                <input 
+                  type="email" 
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                 />
               </div>

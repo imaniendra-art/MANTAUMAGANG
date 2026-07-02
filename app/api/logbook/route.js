@@ -28,8 +28,14 @@ export async function GET(req) {
     }
 
     // Mentor: Tarik semua logbook yang menunggu validasi lapangan
-    if (role === 'mentor') {
-      const logs = await Logbook.find({ status_validasi: 'menunggu_mentor' })
+    if (role === 'mentor' && userId) {
+      const pengajuans = await PengajuanMagang.find({ mentor_id: userId }).select('_id');
+      const pengajuanIds = pengajuans.map(p => p._id);
+
+      const logs = await Logbook.find({ 
+        status_validasi: 'menunggu_mentor',
+        pengajuan_id: { $in: pengajuanIds }
+      })
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
         .populate({ path: 'pengajuan_id', select: 'detail_tempat' })
         .sort({ tanggal: 1 });
@@ -37,8 +43,14 @@ export async function GET(req) {
     }
 
     // Mentor Histori: Tarik semua logbook yang sudah tidak pending (riwayat)
-    if (role === 'mentor_histori') {
-      const logs = await Logbook.find({ status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl', 'revisi'] } })
+    if (role === 'mentor_histori' && userId) {
+      const pengajuans = await PengajuanMagang.find({ mentor_id: userId }).select('_id');
+      const pengajuanIds = pengajuans.map(p => p._id);
+
+      const logs = await Logbook.find({ 
+        status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl', 'revisi'] },
+        pengajuan_id: { $in: pengajuanIds }
+      })
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
         .populate({ path: 'pengajuan_id', select: 'detail_tempat' })
         .sort({ tanggal: -1 });

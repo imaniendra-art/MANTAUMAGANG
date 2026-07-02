@@ -104,7 +104,11 @@ export default function Login() {
           )}
           
           <div className="bg-blue-500/10 backdrop-blur-sm border border-blue-500/20 text-blue-300 p-4 rounded-xl text-sm mb-6">
-            <span className="font-bold">💡 Informasi:</span> Untuk mahasiswa, silakan login menggunakan NIM dan Password default (Password default adalah NIM Anda). Pastikan untuk segera memperbarui password setelah berhasil masuk.
+            <p className="text-sm font-medium leading-relaxed">
+              <span className="font-bold mr-1">💡 Informasi:</span> 
+              Gunakan ID / Username / NIM Anda untuk masuk. <strong>Password default adalah Nomor HP Anda</strong> (atau gunakan NIM/ID jika Nomor HP kosong). 
+              Pastikan untuk segera memperbarui password setelah berhasil masuk.
+            </p>
           </div>
           
           <div className="space-y-5">

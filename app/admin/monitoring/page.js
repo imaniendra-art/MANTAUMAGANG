@@ -68,7 +68,7 @@ function StudentLogbookList({ mahasiswaId }) {
       <div className="space-y-4">
         {logbooks.map(log => (
           <div key={log._id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-4">
-            <div className="shrink-0 w-32 border-r border-slate-100 dark:border-slate-700 pr-4">
+            <div className="shrink-0 w-40 border-r border-slate-100 dark:border-slate-700 pr-4">
               <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {new Date(log.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
@@ -87,9 +87,17 @@ function StudentLogbookList({ mahasiswaId }) {
                   </summary>
                   <div className="mt-2 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900/30 space-y-2 py-1">
                     {log.matched_indicators.map((ind, idx) => (
-                      <div key={idx}>
+                      <div key={idx} className="mb-2">
                         <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">{ind.nama_cpmk}</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">{ind.indikator}</p>
+                        {ind.alasan && (
+                          <div className="mt-1 p-1.5 bg-indigo-50/50 dark:bg-indigo-900/20 rounded border border-indigo-100/50 dark:border-indigo-800/30">
+                            <p className="text-[10px] text-indigo-700 dark:text-indigo-400">
+                              <span className="font-bold mr-1">Analisis Kegiatan:</span>
+                              {ind.alasan}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

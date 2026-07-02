@@ -23,7 +23,9 @@ export const authOptions = {
         const query = {
           $or: [
             { nim_nidn: identifier },
-            { email: identifier }
+            { email: identifier },
+            { nidn: identifier },
+            { nomor_hp: identifier }
           ]
         };
         
