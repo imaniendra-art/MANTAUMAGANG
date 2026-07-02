@@ -80,13 +80,20 @@ export async function PATCH(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    const { id, status_validasi } = data;
+    const { id, status_validasi, catatan_revisi, deskripsi_kegiatan, bukti_link, bukti_kegiatan, matched_indicators } = data;
     
-    if (!id || !status_validasi) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "Missing Logbook ID" }, { status: 400 });
     }
     
-    let updateData = { status_validasi };
+    let updateData = {};
+    if (status_validasi) updateData.status_validasi = status_validasi;
+    if (catatan_revisi !== undefined) updateData.catatan_revisi = catatan_revisi;
+    if (deskripsi_kegiatan) updateData.deskripsi_kegiatan = deskripsi_kegiatan;
+    if (bukti_link !== undefined) updateData.bukti_link = bukti_link;
+    if (bukti_kegiatan) updateData.bukti_kegiatan = bukti_kegiatan;
+    if (matched_indicators) updateData.matched_indicators = matched_indicators;
+
     if (status_validasi === 'divalidasi_mentor') {
       const logbook = await Logbook.findById(id);
       if (logbook && logbook.matched_indicators) {

@@ -78,6 +78,19 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const mhsId = searchParams.get('mhsId');
     const isAdmin = searchParams.get('admin');
+    const pengajuanId = searchParams.get('pengajuanId');
+    
+    // Fetch specific pengajuan by ID
+    if (pengajuanId) {
+      const pengajuan = await PengajuanMagang.findById(pengajuanId)
+        .populate('paket_matkul_id')
+        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
+        .populate('mitra_id')
+        .populate('mahasiswa_id');
+      return NextResponse.json(pengajuan || null);
+    }
     
     // Tarik semua pengajuan berdasarkan status untuk Admin (default: menunggu)
     if (isAdmin === 'true') {
@@ -103,6 +116,7 @@ export async function GET(req) {
       const pengajuan = await PengajuanMagang.findOne({ mahasiswa_id: mhsId })
         .populate('paket_matkul_id')
         .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp' })
         .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
         .populate('mitra_id')
         .sort({ createdAt: -1 });
@@ -126,17 +140,42 @@ export async function PATCH(req) {
     }
 
     if (status_pengajuan === 'disetujui' && !dpl_id) {
-      return NextResponse.json({ error: "DPL ID is required for approval" }, { status: 400 });
+      return NextResponse.json({ error: "DPL ID wajib diisi" }, { status: 400 });
     }
     
     const updatePayload = { status_pengajuan };
     if (dpl_id) updatePayload.dpl_id = dpl_id;
     if (alasan_penolakan) updatePayload.alasan_penolakan = alasan_penolakan;
 
+    if (status_pengajuan === 'disetujui') {
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth();
+      const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+      
+      const startOfYear = new Date(currentYear, 0, 1);
+      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+      
+      const lastDoc = await PengajuanMagang.findOne({
+        nomor_surat_pengantar: { $exists: true, $ne: "" },
+        updatedAt: { $gte: startOfYear, $lte: endOfYear }
+      }).sort({ updatedAt: -1 });
+
+      let nextUrut = 1;
+      if (lastDoc && lastDoc.nomor_surat_pengantar) {
+        const match = lastDoc.nomor_surat_pengantar.match(/^(\d+)/);
+        if (match) {
+          nextUrut = parseInt(match[1], 10) + 1;
+        }
+      }
+      
+      const paddedUrut = String(nextUrut).padStart(3, '0');
+      updatePayload.nomor_surat_pengantar = `${paddedUrut}/STIMI/M.B/${romanMonths[currentMonth]}/${currentYear}`;
+    }
+
     const updated = await PengajuanMagang.findByIdAndUpdate(
       id,
-      updatePayload,
-      { new: true }
+      { $set: updatePayload },
+      { new: true, strict: false }
     );
     
     return NextResponse.json(updated);

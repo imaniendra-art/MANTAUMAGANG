@@ -10,6 +10,10 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'NIM/NIDN wajib diisi'],
     unique: true,
   },
+  nidn: {
+    type: String,
+    required: false,
+  },
   email: {
     type: String,
     required: [true, 'Email wajib diisi'],
@@ -46,4 +50,7 @@ const UserSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+export default mongoose.model('User', UserSchema);

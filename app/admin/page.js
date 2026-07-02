@@ -44,7 +44,9 @@ export default function AdminDashboard() {
     if (!stats) return null;
 
     const fillRatio = stats.totalPosisiTersedia > 0 ? (stats.posisiTerisi / stats.totalPosisiTersedia) * 100 : 0;
-    const totalKonsentrasi = stats.konsentrasiStats?.reduce((acc, curr) => acc + curr.kuota, 0) || 1;
+    
+    const activeKonsentrasi = stats.konsentrasiStats || [];
+    const totalKonsentrasi = activeKonsentrasi.reduce((acc, curr) => acc + curr.kuota, 0) || 1;
 
     return (
       <div className="w-full space-y-10">
@@ -55,7 +57,28 @@ export default function AdminDashboard() {
             <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-blue-500/10 dark:bg-blue-500/20 blur-[30px] rounded-full pointer-events-none" />
             <div className="relative z-10">
               <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Total Mitra</p>
-              <p className="text-3xl font-black text-slate-800 dark:text-slate-100 mt-2">{stats.totalMitra}</p>
+              <p className="text-3xl font-black text-slate-800 dark:text-slate-100 mt-1">{stats.totalMitra}</p>
+              
+              {/* Stacked Bar Sebaran */}
+              <div className="mt-3">
+                <div className="w-full bg-slate-200/50 dark:bg-slate-700/50 h-1.5 flex rounded-full overflow-hidden">
+                  {activeKonsentrasi.map(item => {
+                    const pct = (item.kuota / totalKonsentrasi) * 100;
+                    let bg = 'bg-blue-500';
+                    if (item.name === 'SDM') bg = 'bg-emerald-500';
+                    if (item.name === 'Keuangan') bg = 'bg-amber-500';
+                    if (item.name === 'Pemasaran') bg = 'bg-pink-500';
+                    if (item.name === 'Pengembangan Bisnis') bg = 'bg-purple-500';
+                    return <div key={item.name} className={`${bg} h-full transition-all`} style={{ width: `${pct}%` }} title={`${item.name}: ${item.kuota} slot`} />;
+                  })}
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-1 gap-y-1 text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center gap-1 truncate"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"/> SDM</div>
+                  <div className="flex items-center gap-1 truncate"><div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"/> Keu</div>
+                  <div className="flex items-center gap-1 truncate"><div className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0"/> Pemas.</div>
+                  <div className="flex items-center gap-1 truncate"><div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"/> Bisnis</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -102,33 +125,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Card 5: Sebaran Konsentrasi (Stacked Bar) */}
-          <div className="bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md">
-            <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-purple-500/10 dark:bg-purple-500/20 blur-[30px] rounded-full pointer-events-none" />
-            <div className="relative z-10">
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Sebaran Konsentrasi</p>
-              <div className="w-full bg-slate-200/50 dark:bg-slate-700/50 h-2 mt-3.5 flex rounded-full overflow-hidden">
-                {stats.konsentrasiStats?.map(item => {
-                   const pct = (item.kuota / totalKonsentrasi) * 100;
-                   let bg = 'bg-blue-500';
-                   if (item.name === 'SDM') bg = 'bg-emerald-500';
-                   if (item.name === 'Keuangan') bg = 'bg-amber-500';
-                   if (item.name === 'Pengembangan Bisnis') bg = 'bg-purple-500';
-                   if (item.name === 'Pemasaran') bg = 'bg-pink-500';
-                   return <div key={item.name} className={`${bg} h-full transition-all`} style={{ width: `${pct}%` }} title={`${item.name}: ${item.kuota}`} />;
-                })}
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-x-1 gap-y-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-300">
-                <div className="flex items-center gap-1.5 truncate"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"/> SDM</div>
-                <div className="flex items-center gap-1.5 truncate"><div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"/> Keu</div>
-                <div className="flex items-center gap-1.5 truncate"><div className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0"/> Pemas.</div>
-                <div className="flex items-center gap-1.5 truncate"><div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"/> Bisnis</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 6: Live Feed */}
-          <div className="bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md">
+          {/* Card 5: Live Feed (Replaces Sebaran Konsentrasi) */}
+          <div className="bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md xl:col-span-2">
             <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-red-500/10 dark:bg-red-500/20 blur-[30px] rounded-full pointer-events-none" />
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex justify-between items-center mb-2.5">

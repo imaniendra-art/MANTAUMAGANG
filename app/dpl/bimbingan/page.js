@@ -14,6 +14,11 @@ export default function DaftarBimbinganPage() {
   const [mentorForm, setMentorForm] = useState({ nama_lengkap: '', nomor_hp: '', email: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  
+  // Modal State Reject
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -67,6 +72,39 @@ export default function DaftarBimbinganPage() {
     } catch (error) {
       console.error(error);
       alert("Terjadi kesalahan sistem");
+    }
+  };
+
+  const handleTolakInstansi = async (e) => {
+    e.preventDefault();
+    if (!selectedPengajuan || !rejectReason) return;
+    
+    setIsRejecting(true);
+    try {
+      const res = await fetch("/api/pengajuan", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedPengajuan._id,
+          status_pengajuan: 'ditolak',
+          alasan_penolakan: rejectReason
+        })
+      });
+      
+      if (res.ok) {
+        setShowRejectModal(false);
+        setRejectReason("");
+        fetchData();
+        alert("Mahasiswa telah ditandai sebagai Ditolak Instansi.");
+      } else {
+        const data = await res.json();
+        alert("Gagal menolak: " + (data.error || ""));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan jaringan.");
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -232,6 +270,14 @@ export default function DaftarBimbinganPage() {
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Konfirmasi
                               </button>
+                              
+                              <button 
+                                onClick={() => { setSelectedPengajuan(item); setShowRejectModal(true); }}
+                                className="px-4 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 transition-all w-full max-w-[140px]"
+                                title="Tandai ditolak jika instansi menolak mahasiswa"
+                              >
+                                🚫 Ditolak Instansi
+                              </button>
                             </div>
                           )}
                         </td>
@@ -308,6 +354,55 @@ export default function DaftarBimbinganPage() {
                   className="px-6 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30 disabled:opacity-50 transition-all flex items-center gap-2"
                 >
                   {isSubmitting ? "Menyimpan..." : "Simpan & Tugaskan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Penolakan Instansi */}
+      {showRejectModal && selectedPengajuan && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl shrink-0">
+                🚫
+              </div>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">Ditolak Instansi</h2>
+            </div>
+            
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              Apakah Anda yakin ingin mengembalikan status <strong>{selectedPengajuan.mahasiswa_id?.nama_lengkap}</strong> menjadi ditolak? Mahasiswa akan dapat mengajukan ulang ke lokasi magang lain.
+            </p>
+
+            <form onSubmit={handleTolakInstansi} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Alasan Penolakan (Wajib)</label>
+                <textarea 
+                  required
+                  rows="3"
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm leading-relaxed"
+                  placeholder="Cth: Ditolak instansi karena kuota anak magang bulan ini sudah penuh..."
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setShowRejectModal(false)}
+                  className="px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isRejecting || !rejectReason.trim()}
+                  className="px-6 py-2.5 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/30 disabled:opacity-50 transition-all flex items-center gap-2"
+                >
+                  {isRejecting ? "Memproses..." : "Ya, Tolak Sekarang"}
                 </button>
               </div>
             </form>

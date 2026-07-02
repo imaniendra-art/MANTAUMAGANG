@@ -56,24 +56,26 @@ export async function POST(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    const { nim_nidn, nama_lengkap, nomor_hp, role } = data;
+    const { nim_nidn, nidn, nama_lengkap, nomor_hp, role } = data;
 
     if (!nim_nidn || !nama_lengkap || !nomor_hp) {
-      return NextResponse.json({ error: "NIDN/ID, Nama Lengkap, dan Nomor HP wajib diisi" }, { status: 400 });
+      return NextResponse.json({ error: "NIM/ID, Nama Lengkap, dan Nomor HP wajib diisi" }, { status: 400 });
     }
 
     const existingUser = await User.findOne({ nim_nidn });
 
     if (existingUser) {
-      return NextResponse.json({ error: "NIDN/ID sudah terdaftar" }, { status: 400 });
+      return NextResponse.json({ error: "NIM/ID sudah terdaftar" }, { status: 400 });
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(nim_nidn, salt);
+    const defaultPassword = nomor_hp || nim_nidn;
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
     const newUser = await User.create({
       nama_lengkap,
       nim_nidn,
+      nidn,
       nomor_hp,
       email: `${nim_nidn}@mantau.local`, // Auto-generate required email
       password: hashedPassword,
@@ -100,13 +102,14 @@ export async function PATCH(req) {
       if (!user) return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
       
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(user.nim_nidn, salt);
+      const defaultPassword = user.nomor_hp || user.nim_nidn;
+      const hashedPassword = await bcrypt.hash(defaultPassword, salt);
       
       user.password = hashedPassword;
       user.isFirstLogin = true; 
       await user.save();
       
-      return NextResponse.json({ message: "Password berhasil direset ke NIM/NIDN" });
+      return NextResponse.json({ message: "Password berhasil direset ke Nomor HP/ID" });
     } else {
       const updatedUser = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true });
       if (!updatedUser) return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });

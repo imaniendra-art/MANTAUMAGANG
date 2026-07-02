@@ -39,6 +39,10 @@ const LogbookSchema = new mongoose.Schema({
     enum: ['menunggu_mentor', 'divalidasi_mentor', 'divalidasi_dpl', 'revisi'],
     default: 'menunggu_mentor',
   },
+  catatan_revisi: {
+    type: String,
+    default: "",
+  },
 }, { timestamps: true });
 
 delete mongoose.models.Logbook;

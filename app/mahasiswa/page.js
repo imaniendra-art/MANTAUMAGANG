@@ -18,6 +18,9 @@ function MahasiswaDashboardContent() {
   const [absensiToday, setAbsensiToday] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingPengajuan, setLoadingPengajuan] = useState(true);
+  
+  const [aiTip, setAiTip] = useState(null);
+  const [loadingTip, setLoadingTip] = useState(false);
   const [loadingAbsensi, setLoadingAbsensi] = useState(true);
   const [showToast, setShowToast] = useState(false);
   const [showAbsensiModal, setShowAbsensiModal] = useState(false);
@@ -101,6 +104,49 @@ function MahasiswaDashboardContent() {
     fetchDashboardData();
   }, [session]);
 
+  // Efek untuk memuat atau meng-generate Tip AI
+  useEffect(() => {
+    if (analisis?.achievements) {
+      const unachieved = analisis.achievements.filter(a => a.status !== 'tercapai');
+      if (unachieved.length > 0) {
+        const todayDateObj = new Date();
+        const localISOTime = new Date(todayDateObj.getTime() - todayDateObj.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const index = todayDateObj.getDate() % unachieved.length;
+        const suggestedCpmk = unachieved[index].nama_cpmk;
+        
+        const cacheKey = `ai_tip_${localISOTime}_${suggestedCpmk}`;
+        const cachedTip = localStorage.getItem(cacheKey);
+        
+        if (cachedTip) {
+          setAiTip(cachedTip);
+        } else {
+          setLoadingTip(true);
+          fetch('/api/ai/daily-tip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cpmk_name: suggestedCpmk })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.tip) {
+              const finalTip = `Yuk jadilah proaktif! Diskusikan dengan mentormu hari ini, ajukan inisiatif atau tanyakan kegiatan apa yang bisa kamu kerjakan. Sebagai saran, <strong>${data.tip}</strong> Mentor pasti akan sangat mengapresiasi semangatmu!`;
+              localStorage.setItem(cacheKey, finalTip);
+              setAiTip(finalTip);
+            }
+            setLoadingTip(false);
+          })
+          .catch(err => {
+            console.error(err);
+            setLoadingTip(false);
+          });
+        }
+      } else {
+        // Jika sudah tercapai semua
+        setAiTip("Luar biasa! Semua target CPMK-mu sudah tercapai. Terus pertahankan performamu dan jadilah proaktif membantu proyek-proyek penting di tempat magang. Mentor pasti akan sangat mengapresiasi semangatmu!");
+      }
+    }
+  }, [analisis]);
+
   const handleFileAbsensiChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -167,6 +213,19 @@ function MahasiswaDashboardContent() {
 
   const dplValidatedLog = analisis?.recent_logs?.find(l => l.status_validasi === 'divalidasi_dpl');
 
+  let sisaHari = null;
+  let isExpired = false;
+  if (pengajuan && pengajuan.status_pengajuan === 'disetujui' && pengajuan.is_dpl_confirmed && pengajuan.tanggal_selesai) {
+    const endDate = new Date(pengajuan.tanggal_selesai);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    sisaHari = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (sisaHari < 0) {
+      isExpired = true;
+      sisaHari = 0;
+    }
+  }
+
   // Alert Card Berdasarkan Status Pengajuan
   const renderStatusAlert = () => {
     if (loadingPengajuan) return (
@@ -209,45 +268,38 @@ function MahasiswaDashboardContent() {
       
       const isConfirmed = pengajuan.is_dpl_confirmed;
 
-      let sisaHari = null;
-      let isExpired = false;
-      if (isConfirmed && pengajuan.tanggal_selesai) {
-        const endDate = new Date(pengajuan.tanggal_selesai);
-        const today = new Date();
-        const diffTime = endDate.getTime() - today.getTime();
-        sisaHari = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (sisaHari < 0) {
-          isExpired = true;
-          sisaHari = 0;
-        }
-      }
-
       const waLink = waNumber 
         ? `https://wa.me/${waNumber.replace(/[^0-9]/g, '').replace(/^0/, '62')}?text=${encodeURIComponent(`Halo Bapak/Ibu ${namaDpl}, saya ${session?.user?.name || 'Mahasiswa'} mahasiswa bimbingan magang Bapak/Ibu. Mohon arahannya untuk proses koordinasi Magang Mandiri pada ${lokasiMagang}.`)}`
         : null;
 
       return (
-        <div className="h-full min-h-[8rem] relative bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 dark:border-slate-700 border-l-8 border-l-emerald-500 shadow-sm dark:shadow-none flex items-start gap-4 transition-all hover:shadow-md">
-          <CheckCircle2 className="w-8 h-8 text-emerald-500 shrink-0 mt-1" />
-          <div className="flex-1 overflow-hidden">
-            <h4 className="font-bold text-base text-slate-800 dark:text-slate-100 mb-1">
-              {isConfirmed ? "Penyerahan Selesai" : "Pengajuan Diterima"}
-            </h4>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2 leading-relaxed">
-              🎉 Selamat! Anda diterima. DPL Anda: <strong>{namaDpl}</strong>.
-            </p>
+        <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-emerald-500/10 to-teal-500/5 p-5 rounded-2xl border border-emerald-400/20 flex flex-col transition-all hover:shadow-md">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                {isConfirmed ? "Penyerahan Selesai" : "Pengajuan Diterima"}
+              </h3>
+              <p className="text-[11px] font-medium text-slate-500 mt-1">Status Pengajuan Magang</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl shrink-0">
+              {isConfirmed ? '✅' : '🎉'}
+            </div>
+          </div>
+          
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-200/50 dark:border-white/10">
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                🎉 Selamat! Anda diterima. DPL Anda: <strong>{namaDpl}</strong>.
+              </p>
+            </div>
+            
             {isConfirmed ? (
-              <div className="space-y-2 mb-4">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50 dark:bg-emerald-500/10 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+              <div className="space-y-2 mt-auto">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold leading-relaxed bg-emerald-50 dark:bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-800/50 shadow-sm">
                   ✅ DPL telah mengonfirmasi penyerahan Anda. Silakan mengisi logbook harian!
                 </p>
-                {sisaHari !== null && (
-                  <p className={`text-xs font-bold p-2.5 rounded-lg border shadow-sm flex items-center gap-2 ${isExpired ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                    ⏳ {isExpired ? 'Waktu Magang Telah Selesai. Segera susun laporan akhir.' : `Sisa Waktu Magang: ${sisaHari} Hari Lagi`}
-                  </p>
-                )}
                 {analisis?.achieved_today && (
-                  <p className="text-xs text-orange-600 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 animate-pulse shadow-sm">
+                  <p className="text-[11px] text-orange-600 font-bold bg-orange-50 p-2.5 rounded-lg border border-orange-100 animate-pulse shadow-sm">
                     🔥 Luar biasa! Kamu berhasil mendapatkan {analisis.achieved_count} pencapaian baru hari ini. Teruskan semangatmu!
                   </p>
                 )}
@@ -258,19 +310,31 @@ function MahasiswaDashboardContent() {
               </p>
             )}
             
-            {!isConfirmed && waLink && (
-              <a 
-                href={waLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-xl transition-colors shadow-sm dark:shadow-none"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                </svg>
-                Hubungi DPL via WhatsApp
-              </a>
-            )}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {!isConfirmed && waLink && (
+                <a 
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-xl transition-colors shadow-sm dark:shadow-none"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                  Hubungi DPL via WhatsApp
+                </a>
+              )}
+              {!isConfirmed && (
+                <a
+                  href={`/mahasiswa/laporan/templates/pengantar?posisiId=${pengajuan.posisi_id?._id || ''}&pengajuanId=${pengajuan._id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-700 dark:text-blue-400 font-bold text-xs rounded-xl transition-colors shadow-sm dark:shadow-none"
+                >
+                  🖨️ Cetak Surat Pengantar
+                </a>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -312,58 +376,71 @@ function MahasiswaDashboardContent() {
       {/* Kolom 2: Mini Achievement Board */}
       <button 
         onClick={() => router.push('/mahasiswa/pencapaian')}
-        className="text-left h-full min-h-[8rem] bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none p-5 rounded-2xl border border-slate-200 dark:border-slate-700 transition-all hover:scale-[1.02] hover:border-indigo-400 hover:shadow-md flex flex-col relative overflow-hidden group"
+        className="text-left h-full min-h-[14rem] bg-gradient-to-br from-indigo-50/80 to-emerald-50/80 dark:from-indigo-900/30 dark:to-emerald-900/30 backdrop-blur-xl shadow-sm dark:shadow-none p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 transition-all hover:scale-[1.02] hover:border-indigo-400 hover:shadow-md flex flex-col relative overflow-hidden group justify-center items-center"
       >
-        <div className="flex justify-between items-center mb-4 shrink-0">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
-            🏆 Papan Pencapaian <span className="text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
-          </h3>
-          <span className="text-[10px] font-bold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-600">
-            {analisis?.achievements?.filter(a => a.status === 'tercapai').length || 0} / {analisis?.achievements?.length || 0}
-          </span>
+        {/* Animated background blobs */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/20 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-8 left-10 w-32 h-32 bg-pink-400/20 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-4000" />
+
+        <div className="relative z-10 flex flex-col items-center justify-center text-center h-full gap-2 w-full">
+          <div className="text-5xl mb-2 animate-bounce drop-shadow-lg">
+            🏆
+          </div>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed px-2">
+            Anda telah melalui aktifitas yang menyelesaikan <span className="text-indigo-600 dark:text-indigo-400 text-lg font-black mx-1">{analisis?.achievements?.filter(a => a.status === 'tercapai').length || 0}</span> dari <span className="text-slate-800 dark:text-slate-100 font-black">{analisis?.achievements?.length || 0}</span> CPMK.
+          </p>
+          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 animate-pulse">
+            Semangat magang dan jadilah berdampak!
+          </p>
+          
+          <div className="mt-5 px-5 py-2.5 bg-white/80 dark:bg-slate-800/80 rounded-full text-xs font-bold text-indigo-600 dark:text-indigo-400 shadow-sm backdrop-blur-sm group-hover:bg-indigo-600 group-hover:text-white dark:group-hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2">
+            Lihat semua capaian <span className="opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
+          </div>
         </div>
         
-        <div className="h-[136px] overflow-y-auto w-full pr-1">
-            <div className="flex flex-wrap gap-2">
-              {analisis.achievements.map((ach, i) => (
-                <div 
-                  key={i} 
-                  title={ach.nama_cpmk}
-                  className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-lg transition-all ${
-                    ach.status === 'tercapai' 
-                      ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-orange-500/40 ring-2 ring-amber-200' 
-                      : ach.status === 'pending'
-                      ? 'bg-blue-100 text-blue-500 border border-blue-200'
-                      : 'bg-slate-100 text-slate-300 grayscale'
-                  }`}
-                >
-                  {ach.status === 'tercapai' ? '⭐' : ach.status === 'pending' ? '⏳' : '🔒'}
-                </div>
-              ))}
-            </div>
-            
-            <style jsx>{`
-              div::-webkit-scrollbar {
-                width: 4px;
-              }
-              div::-webkit-scrollbar-track {
-                background: rgba(0,0,0,0.05); 
-                border-radius: 10px;
-              }
-              div::-webkit-scrollbar-thumb {
-                background: rgba(0,0,0,0.15); 
-                border-radius: 10px;
-              }
-              div::-webkit-scrollbar-thumb:hover {
-                background: rgba(0,0,0,0.25); 
-              }
-            `}</style>
-          </div>
+        <style jsx>{`
+          @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(20px, -30px) scale(1.1); }
+            66% { transform: translate(-15px, 15px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+          }
+          .animate-blob {
+            animation: blob 7s infinite;
+          }
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          .animation-delay-4000 {
+            animation-delay: 4s;
+          }
+        `}</style>
       </button>
 
       {/* Kolom 3: Absensi Harian */}
-      {loadingAbsensi ? (
+      {loadingAbsensi || loadingPengajuan ? (
         <div className="h-full min-h-[8rem] bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none rounded-2xl animate-pulse border border-slate-300 dark:border-slate-600" />
+      ) : (!pengajuan || pengajuan.status_pengajuan !== 'disetujui' || !pengajuan.is_dpl_confirmed) ? (
+        <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-indigo-500/10 to-blue-500/5 p-5 rounded-2xl border border-indigo-400/20 flex flex-col justify-between transition-all hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-indigo-700 dark:text-indigo-400">Persiapan Magang</h3>
+              <p className="text-[11px] font-medium text-slate-500 mt-1 leading-relaxed">
+                Pilihlah tempat magang terbaik yang sesuai dengan konsentrasi Anda. Terus semangat mempersiapkan diri!
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xl shrink-0">
+              🌟
+            </div>
+          </div>
+          <button 
+            onClick={() => router.push('/alur')}
+            className="w-full mt-4 py-2.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-xl transition-colors"
+          >
+            Baca Petunjuk & Alur
+          </button>
+        </div>
       ) : !absensiToday ? (
         <div className="h-full min-h-[8rem] relative bg-gradient-to-br from-indigo-500/10 to-purple-500/5 p-5 rounded-2xl border border-indigo-400/20 overflow-hidden flex flex-col justify-between transition-all hover:shadow-md">
           <div className="flex items-start justify-between">
@@ -395,12 +472,22 @@ function MahasiswaDashboardContent() {
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-xl shrink-0">
                   {absensiToday.status === 'hadir' ? '🚀' : absensiToday.status === 'sakit' ? '🤒' : '✈️'}
                 </div>
-                <div>
+                <div className="w-full">
                   <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 capitalize">Status: {absensiToday.status}</h3>
-                  <p className="text-[10px] font-bold text-slate-500">{new Date(absensiToday.waktu_checkin).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-[10px] font-bold text-slate-500">
+                    {new Date(absensiToday.waktu_checkin).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
               </div>
               <div className="flex flex-col gap-2 flex-1 justify-between">
+                {sisaHari !== null && (
+                  <div className="mt-3 bg-blue-50/50 dark:bg-blue-900/10 p-2.5 rounded-xl border border-blue-100/50 dark:border-blue-800/30 flex items-center justify-between gap-3">
+                    <p className="text-[10px] uppercase font-bold text-blue-500/80 dark:text-blue-400/80 shrink-0">⏳ Sisa Waktu Magang:</p>
+                    <p className={`text-xs font-black tracking-wide text-right ${isExpired ? 'text-rose-500' : 'text-blue-700 dark:text-blue-300'}`}>
+                      {isExpired ? 'Telah Selesai' : `${sisaHari} Hari Lagi`}
+                    </p>
+                  </div>
+                )}
                 <div className="bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-200/50 dark:border-white/10">
                   <p className="text-[9px] uppercase font-bold text-slate-400 mb-1">{absensiToday.status === 'hadir' ? '🎯 Target:' : '📄 Keterangan:'}</p>
                   <p className="text-[11px] text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
@@ -422,6 +509,9 @@ function MahasiswaDashboardContent() {
       )}
     </div>
   );
+
+  // Default tip saat loading atau error
+  let fallbackTip = "Yuk jadilah proaktif! Diskusikan dengan mentormu hari ini, ajukan inisiatif atau tanyakan kegiatan apa yang bisa kamu kerjakan. Mentor pasti akan sangat mengapresiasi semangatmu!";
 
   return (
     <>
@@ -462,6 +552,22 @@ function MahasiswaDashboardContent() {
 
               {absensiStatus === 'hadir' ? (
                 <div className="animate-in fade-in slide-in-from-bottom-2">
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-4 rounded-xl mb-5 border border-indigo-100 dark:border-indigo-800/50 flex items-start gap-3 shadow-sm">
+                    <div className="text-xl mt-0.5 animate-bounce">💡</div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">Tips Hari Ini</p>
+                      {loadingTip ? (
+                        <div className="space-y-1 mt-2">
+                          <div className="h-2.5 bg-indigo-200/50 dark:bg-indigo-700/30 rounded animate-pulse w-full"></div>
+                          <div className="h-2.5 bg-indigo-200/50 dark:bg-indigo-700/30 rounded animate-pulse w-5/6"></div>
+                          <div className="h-2.5 bg-indigo-200/50 dark:bg-indigo-700/30 rounded animate-pulse w-4/6"></div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: aiTip || fallbackTip }}></p>
+                      )}
+                    </div>
+                  </div>
+
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Target / Rencana Kerja Hari Ini</label>
                   <p className="text-xs text-slate-500 mb-2">Tuliskan 1-3 hal utama yang ingin kamu selesaikan.</p>
                   <textarea 

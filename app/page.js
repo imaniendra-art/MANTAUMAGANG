@@ -9,7 +9,7 @@ export default function Home() {
   const { data: session, status } = useSession();
 
   const getDashboardUrl = () => {
-    if (!session) return '/login';
+    if (!session || !session.user) return '/login';
     if (session.user.role === 'admin_prodi') return '/admin';
     return `/${session.user.role}`;
   };
@@ -39,7 +39,7 @@ export default function Home() {
             }}
             className="px-6 py-2 rounded-full bg-white text-slate-900 font-bold hover:bg-slate-100 transition-all shadow-lg shadow-white/10"
           >
-            {status === 'authenticated' ? 'Ke Dashboard' : 'Login Sistem'}
+            {status === 'authenticated' && session?.user ? 'Ke Dashboard' : 'Login Sistem'}
           </button>
         </nav>
 

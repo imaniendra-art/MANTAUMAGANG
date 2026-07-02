@@ -142,7 +142,7 @@ const MENU_CONFIG = {
       { name: "Daftar Bimbingan", href: "/dpl/bimbingan", icon: "📋", desc: "Pantau dan konfirmasi penyerahan mahasiswa", color: "from-blue-500 to-indigo-600" },
       { name: "Validasi Logbook", href: "/dpl/validasi", icon: "✍️", desc: "Review dan validasi logbook harian mahasiswa", color: "from-emerald-500 to-teal-600" },
       { name: "Validasi Laporan", href: "/dpl/validasi-laporan", icon: "📑", desc: "Persetujuan Laporan Akhir", color: "from-purple-500 to-purple-600" },
-      { name: "Evaluasi Akhir", href: "/dpl/evaluasi", icon: "📊", desc: "Lakukan evaluasi akhir dan penilaian kinerja", color: "from-amber-500 to-orange-600" },
+      { name: "Petunjuk Magang", href: "/dpl/petunjuk", icon: "📚", desc: "Panduan pembimbingan dan rincian target CPMK", color: "from-amber-500 to-orange-600" },
     ],
   },
   mentor: {
@@ -150,6 +150,7 @@ const MENU_CONFIG = {
     subtitle: "Validasi logbook harian dan pantau perkembangan mahasiswa magang.",
     menus: [
       { name: "Validasi Logbook", href: "/mentor/validasi", icon: "✍️", desc: "Review dan validasi logbook harian mahasiswa", color: "from-cyan-500 to-blue-600" },
+      { name: "Petunjuk Magang", href: "/mentor/petunjuk", icon: "📚", desc: "Panduan mentoring dan rincian target CPMK", color: "from-emerald-500 to-teal-600" },
     ],
   },
 };

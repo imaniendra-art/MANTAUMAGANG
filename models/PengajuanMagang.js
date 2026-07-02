@@ -60,6 +60,7 @@ const PengajuanMagangSchema = new mongoose.Schema({
   nilai_akhir_mutlak: { type: Number },
   catatan_evaluasi: { type: String },
   alasan_penolakan: { type: String },
+  nomor_surat_pengantar: { type: String },
   is_laporan_unlocked: {
     type: Boolean,
     default: false,

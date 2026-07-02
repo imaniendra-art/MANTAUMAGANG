@@ -191,6 +191,7 @@ export default function ValidasiPengajuan() {
                         <th className="py-4 px-4 text-left">Lokasi & Posisi</th>
                         <th className="py-4 px-4 text-left">Dosen Pembimbing (DPL)</th>
                         <th className="py-4 px-4 text-left">Mentor Industri</th>
+                        <th className="py-4 px-4 text-center">Aksi</th>
                       </>
                     )}
                   </tr>
@@ -307,6 +308,15 @@ export default function ValidasiPengajuan() {
                                 </div>
                               )}
                             </td>
+                            <td className="py-4 px-4 text-center">
+                              <a 
+                                href={`/mahasiswa/laporan/templates/pengantar?posisiId=${p.posisi_id?._id || ''}&pengajuanId=${p._id}`} 
+                                target="_blank" 
+                                className="inline-block px-3 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white font-bold text-xs rounded-lg transition-colors whitespace-nowrap"
+                              >
+                                🖨️ Cetak Surat
+                              </a>
+                            </td>
                           </>
                         )}
                       </tr>
@@ -407,6 +417,8 @@ export default function ValidasiPengajuan() {
                     ))}
                   </select>
                 </div>
+
+                {/* Nomor Surat Pengantar (Otomatis) - Berjalan di latar belakang tanpa notif UI */}
                 
               </div>
               

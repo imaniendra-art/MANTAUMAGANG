@@ -6,13 +6,15 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
-    if (!token) {
+    if (!token || token.error === "UserDeleted") {
       return NextResponse.redirect(new URL('/login', req.url));
     }
 
     if (path.startsWith('/mahasiswa') && token.role !== 'mahasiswa') {
       if (token.role === 'dpl' && path.startsWith('/mahasiswa/laporan/cetak/laporan')) {
         // allow DPL to view
+      } else if (token.role === 'admin_prodi' && path.startsWith('/mahasiswa/laporan/templates/pengantar')) {
+        // allow Admin to view
       } else {
         return NextResponse.redirect(new URL('/login', req.url));
       }

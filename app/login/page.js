@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,7 +109,7 @@ export default function Login() {
           
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2" htmlFor="email">Email / NIM</label>
+              <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2" htmlFor="email">Email / NIM / Username</label>
               <input
                 id="email"
                 name="email"
@@ -125,17 +127,26 @@ export default function Login() {
                 <label className="block text-sm font-bold text-slate-500 dark:text-slate-400" htmlFor="password">Password</label>
                 <a href="#" className="text-xs font-bold text-blue-400 hover:text-blue-300">Lupa password?</a>
               </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none relative block w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 placeholder:text-slate-500 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-slate-50 dark:bg-slate-800/80 backdrop-blur-sm transition-all"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  className="appearance-none block w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 placeholder:text-slate-500 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-slate-50 dark:bg-slate-800/80 backdrop-blur-sm transition-all pr-12"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
           </div>
 

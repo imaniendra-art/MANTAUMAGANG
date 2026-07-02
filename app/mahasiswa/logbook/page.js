@@ -42,6 +42,7 @@ export default function LogbookPage() {
   const [deskripsi, setDeskripsi] = useState("");
   const [buktiLink, setBuktiLink] = useState("");
   const [buktiFoto, setBuktiFoto] = useState("");
+  const [editingLogId, setEditingLogId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [achievementToast, setAchievementToast] = useState(null);
@@ -139,17 +140,29 @@ export default function LogbookPage() {
         bukti_kegiatan: buktiFoto
       };
 
-      const res = await fetch('/api/logbook', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let res;
+      if (editingLogId) {
+        payload.id = editingLogId;
+        payload.status_validasi = 'menunggu_mentor'; // Reset status
+        res = await fetch('/api/logbook', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch('/api/logbook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
 
       if (res.ok) {
         setTanggal("");
         setDeskripsi("");
         setBuktiLink("");
         setBuktiFoto("");
+        setEditingLogId(null);
         
         // Custom UI Reset for file input
         const fileInput = document.getElementById("file-upload");
@@ -173,6 +186,25 @@ export default function LogbookPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditClick = (log) => {
+    setEditingLogId(log._id);
+    setTanggal(new Date(log.tanggal).toISOString().split('T')[0]);
+    setDeskripsi(log.deskripsi_kegiatan);
+    setBuktiLink(log.bukti_link || "");
+    setBuktiFoto(log.bukti_kegiatan || "");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLogId(null);
+    setTanggal(getTodayLocal());
+    setDeskripsi("");
+    setBuktiLink("");
+    setBuktiFoto("");
+    const fileInput = document.getElementById("file-upload");
+    if (fileInput) fileInput.value = "";
   };
 
   // Get status badge UI
@@ -297,10 +329,14 @@ export default function LogbookPage() {
             )}
 
             {/* Form Pengisian */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden sticky top-28">
-              <div className="p-6 border-b border-slate-100 bg-indigo-50/30">
-                <h3 className="text-lg font-bold text-slate-900">Tulis Logbook Baru</h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Isi berdasarkan aktivitas rill di {pengajuan.detail_tempat?.nama}.</p>
+            <div className={`bg-white rounded-3xl border ${editingLogId ? 'border-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.1)]' : 'border-slate-200 shadow-sm'} overflow-hidden sticky top-28 transition-all`}>
+              <div className={`p-6 border-b ${editingLogId ? 'border-rose-100 bg-rose-50/50' : 'border-slate-100 bg-indigo-50/30'}`}>
+                <h3 className={`text-lg font-bold ${editingLogId ? 'text-rose-700' : 'text-slate-900'}`}>
+                  {editingLogId ? '✏️ Perbaiki Logbook' : 'Tulis Logbook Baru'}
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  {editingLogId ? 'Silakan perbaiki deskripsi kegiatan sesuai arahan revisi.' : `Isi berdasarkan aktivitas rill di ${pengajuan.detail_tempat?.nama}.`}
+                </p>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
                 <div>
@@ -335,13 +371,24 @@ export default function LogbookPage() {
                     <input value={buktiLink} onChange={(e) => setBuktiLink(e.target.value)} type="url" placeholder="https://..." className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 bg-slate-50 font-medium text-sm" />
                   </div>
                 </div>
-                <button 
-                  type="submit" 
-                  disabled={submitting}
-                  className="w-full py-3.5 text-sm font-bold text-slate-800 dark:text-slate-100 bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all disabled:opacity-50"
-                >
-                  {submitting ? 'Menyimpan...' : 'Simpan Logbook'}
-                </button>
+                <div className="flex gap-3 pt-2">
+                  {editingLogId && (
+                    <button 
+                      type="button" 
+                      onClick={handleCancelEdit}
+                      className="w-1/3 py-3.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                    >
+                      Batal
+                    </button>
+                  )}
+                  <button 
+                    type="submit" 
+                    disabled={submitting}
+                    className={`${editingLogId ? 'w-2/3 bg-rose-600 hover:bg-rose-700' : 'w-full bg-indigo-600 hover:bg-indigo-700'} py-3.5 text-sm font-bold text-white rounded-xl shadow-md transition-all disabled:opacity-50`}
+                  >
+                    {submitting ? 'Menyimpan...' : (editingLogId ? 'Simpan Perbaikan' : 'Simpan Logbook')}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -372,6 +419,18 @@ export default function LogbookPage() {
                       {getStatusBadge(log.status_validasi)}
                     </div>
                     
+                    {log.status_validasi === 'revisi' && log.catatan_revisi && (
+                      <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl">
+                        <div className="flex gap-2 items-start">
+                          <span className="text-rose-500 mt-0.5">⚠️</span>
+                          <div>
+                            <p className="text-xs font-black text-rose-700 uppercase tracking-wider mb-1">Catatan Revisi dari Mentor:</p>
+                            <p className="text-sm text-rose-800 font-medium leading-relaxed">{log.catatan_revisi}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-slate-700 text-sm mt-4 leading-relaxed">{log.deskripsi_kegiatan}</p>
                     
                     <div className="mt-4 pt-4 border-t border-slate-100">
@@ -419,6 +478,17 @@ export default function LogbookPage() {
                           )}
                         </div>
                       </div>
+                      
+                      {log.status_validasi === 'revisi' && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+                          <button
+                            onClick={() => handleEditClick(log)}
+                            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-md shadow-rose-600/20 transition-all flex items-center gap-2"
+                          >
+                            <span>✏️</span> Perbaiki Logbook Ini
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -83,9 +83,17 @@ export default function ProfilPage() {
                 <p className="text-lg font-bold text-blue-600 dark:text-blue-400 uppercase">{session?.user?.role}</p>
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">NIM / NIDN / ID</p>
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">
+                  {role === 'mahasiswa' ? 'NIM' : 'ID (Username)'}
+                </p>
                 <p className="text-lg font-bold text-slate-900 dark:text-white">{session?.user?.nim_nidn}</p>
               </div>
+              {session?.user?.nidn && role !== 'mahasiswa' && (
+                <div>
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">NIDN</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{session?.user?.nidn}</p>
+                </div>
+              )}
             </div>
             
             <hr className="border-slate-200 dark:border-slate-700 mb-8" />

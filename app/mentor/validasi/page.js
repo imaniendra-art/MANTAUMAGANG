@@ -8,6 +8,11 @@ export default function MentorValidasi() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
   const [activeTab, setActiveTab] = useState('antrean'); // 'antrean' or 'histori'
+  
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedLogId, setSelectedLogId] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -43,28 +48,40 @@ export default function MentorValidasi() {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  const handleValidasi = async (id, newStatus) => {
-    // Optimistic UI Update: Langsung pindahkan statusnya (hilang dari antrean, pindah ke histori)
-    setLogbooks(prev => prev.map(log => 
-      log._id === id ? { ...log, status_validasi: newStatus } : log
-    ));
-    
+  const handleValidasi = async (id, newStatus, catatan_revisi = "") => {
+    if (newStatus === 'revisi' && !catatan_revisi) return; // Prevent empty reason
+    setSubmitting(true);
     try {
+      const payload = { id, status_validasi: newStatus };
+      if (catatan_revisi) payload.catatan_revisi = catatan_revisi;
+
       const res = await fetch('/api/logbook', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status_validasi: newStatus })
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         showToast(newStatus === 'divalidasi_mentor' ? "Fakta Kegiatan Divalidasi!" : "Diminta revisi!");
+        if (newStatus === 'revisi') {
+          setShowRejectModal(false);
+          setRejectReason("");
+          setSelectedLogId(null);
+        }
+        fetchData();
       } else {
         alert("Gagal memvalidasi");
-        fetchData(); // revert
       }
     } catch (error) {
       alert("Terjadi kesalahan sistem");
-      fetchData(); // revert
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const openRejectModal = (id) => {
+    setSelectedLogId(id);
+    setRejectReason("");
+    setShowRejectModal(true);
   };
 
   const handleViewFile = (dataUrl) => {
@@ -211,7 +228,7 @@ export default function MentorValidasi() {
                           {activeTab === 'antrean' ? (
                             <div className="flex flex-col xl:flex-row justify-end gap-2">
                               <button 
-                                onClick={() => handleValidasi(log._id, 'revisi')}
+                                onClick={() => openRejectModal(log._id)}
                                 className="px-4 py-2 border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap"
                               >
                                 Minta Revisi
@@ -243,6 +260,45 @@ export default function MentorValidasi() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Revisi */}
+      {showRejectModal && selectedLogId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-black text-rose-600 dark:text-rose-400">Minta Revisi Logbook</h3>
+                <button onClick={() => setShowRejectModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-bold text-xl">&times;</button>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Mohon tuliskan dengan jelas bagian mana yang harus diperbaiki oleh mahasiswa pada logbook hari ini.</p>
+              
+              <textarea
+                required
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Contoh: Deskripsi terlalu singkat, mohon jelaskan apa saja tugas spesifik yang kamu kerjakan hari ini..."
+                className="w-full h-32 border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm font-medium text-slate-800 dark:text-slate-100"
+              ></textarea>
+              
+              <div className="mt-6 flex justify-end gap-3">
+                <button 
+                  onClick={() => setShowRejectModal(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => handleValidasi(selectedLogId, 'revisi', rejectReason)}
+                  disabled={submitting || !rejectReason.trim()}
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 flex items-center gap-2 rounded-xl shadow-lg shadow-rose-600/20 transition-all"
+                >
+                  {submitting ? 'Memproses...' : 'Kirim Revisi'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -202,13 +202,13 @@ function DetailContent() {
               </p>
 
               <div className="mb-8">
-                <Link href={`/mahasiswa/laporan/templates/pengantar?posisiId=${posisiId}`} target="_blank" className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 transition-colors">
-                  <div className="text-2xl">📨</div>
+                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <div className="text-2xl">📝</div>
                   <div>
-                    <div className="font-bold text-sm text-blue-800 dark:text-blue-300">Surat Pengantar Magang</div>
-                    <div className="text-xs text-blue-600 dark:text-blue-400">Template Cetak & TTD</div>
+                    <div className="font-bold text-sm text-slate-800 dark:text-slate-300">Surat Pengantar Magang</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Akan tersedia setelah divalidasi oleh Prodi</div>
                   </div>
-                </Link>
+                </div>
               </div>
 
               {isFull ? (

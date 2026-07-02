@@ -20,6 +20,7 @@ export default function ManajemenPenggunaPage() {
   const [addingUser, setAddingUser] = useState(false);
   const [addForm, setAddForm] = useState({
     nim_nidn: "",
+    nidn: "",
     nama_lengkap: "",
     nomor_hp: ""
   });
@@ -30,6 +31,7 @@ export default function ManajemenPenggunaPage() {
   const [editForm, setEditForm] = useState({
     id: "",
     nim_nidn: "",
+    nidn: "",
     nama_lengkap: "",
     nomor_hp: "",
     program_studi: "",
@@ -190,9 +192,9 @@ export default function ManajemenPenggunaPage() {
       if (!res.ok) {
         alert(data.error || "Gagal menambahkan pengguna.");
       } else {
-        alert("Pengguna berhasil ditambahkan. Password default sama dengan NIDN/ID.");
+        alert("Pengguna berhasil ditambahkan. Password default sama dengan NIM/ID.");
         setShowAddModal(false);
-        setAddForm({ nim_nidn: "", nama_lengkap: "", nomor_hp: "" });
+        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "" });
         fetchUsers(activeTab);
       }
     } catch (error) {
@@ -206,6 +208,7 @@ export default function ManajemenPenggunaPage() {
     setEditForm({
       id: user._id,
       nim_nidn: user.nim_nidn || "",
+      nidn: user.nidn || "",
       nama_lengkap: user.nama_lengkap || "",
       nomor_hp: user.nomor_hp || "",
       program_studi: user.program_studi || "",
@@ -240,7 +243,7 @@ export default function ManajemenPenggunaPage() {
   };
 
   const handleResetPassword = async (user) => {
-    if (confirm(`Yakin ingin me-reset password ${user.nama_lengkap} kembali menjadi NIM/NIDN-nya?`)) {
+    if (confirm(`Yakin ingin me-reset password ${user.nama_lengkap} kembali menjadi Nomor HP atau ID-nya?`)) {
       try {
         const res = await fetch('/api/admin/pengguna', {
           method: 'PATCH',
@@ -412,8 +415,17 @@ export default function ManajemenPenggunaPage() {
                           onClick={() => requestSort('nim_nidn')}
                           className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         >
-                          {activeTab === 'mahasiswa' ? 'NIM' : 'NIDN/ID'} {getSortIcon('nim_nidn')}
+                          {activeTab === 'mahasiswa' ? 'NIM' : 'ID'} {getSortIcon('nim_nidn')}
                         </th>
+                        {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && (
+                          <th 
+                            scope="col" 
+                            onClick={() => requestSort('nidn')}
+                            className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            NIDN {getSortIcon('nidn')}
+                          </th>
+                        )}
                         <th 
                           scope="col" 
                           onClick={() => requestSort('nama_lengkap')}
@@ -466,6 +478,9 @@ export default function ManajemenPenggunaPage() {
                         <tr key={user._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500">{startIndex + idx + 1}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.nim_nidn}</td>
+                          {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.nidn || '-'}</td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-white">{user.nama_lengkap}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{activeTab === 'mentor' ? (user.lokasi || '-') : (user.program_studi || '-')}</td>
                           {activeTab === 'mahasiswa' && (
@@ -479,7 +494,7 @@ export default function ManajemenPenggunaPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {user.isFirstLogin !== false ? (
-                              <span className="px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 rounded-full text-xs font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-600">Belum Aktif</span>
+                              <span className="px-2.5 py-1 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800 whitespace-nowrap">Aktif (Belum Ganti PW)</span>
                             ) : (
                               <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full text-xs font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-800">Aktif</span>
                             )}
@@ -569,7 +584,7 @@ export default function ManajemenPenggunaPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl overflow-hidden relative scale-in-95 duration-200">
             <div className="p-8 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:white flex items-center gap-2">
                 📥 Import Data Mahasiswa (SIAM)
               </h2>
             </div>
@@ -661,7 +676,7 @@ export default function ManajemenPenggunaPage() {
             <form onSubmit={handleAddSubmit} className="p-8 bg-slate-50 dark:bg-slate-900/50 space-y-5">
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  NIDN / ID (Username)
+                  ID (Username)
                 </label>
                 <input 
                   type="text" 
@@ -669,9 +684,23 @@ export default function ManajemenPenggunaPage() {
                   value={addForm.nim_nidn}
                   onChange={(e) => setAddForm({...addForm, nim_nidn: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  placeholder="Contoh: 09123456"
+                  placeholder="Contoh: riswan"
                 />
               </div>
+              {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    NIDN
+                  </label>
+                  <input 
+                    type="text" 
+                    value={addForm.nidn}
+                    onChange={(e) => setAddForm({...addForm, nidn: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    placeholder="Contoh: 09123456"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                   Nama Lengkap
@@ -732,7 +761,7 @@ export default function ManajemenPenggunaPage() {
             <form onSubmit={handleEditSubmit} className="p-8 bg-slate-50 dark:bg-slate-900/50 space-y-5">
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  {activeTab === 'mahasiswa' ? 'NIM' : 'NIDN / ID'}
+                  {activeTab === 'mahasiswa' ? 'NIM' : 'ID'}
                 </label>
                 <input 
                   type="text" 
@@ -742,6 +771,19 @@ export default function ManajemenPenggunaPage() {
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              {activeTab !== 'mahasiswa' && (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    NIDN
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editForm.nidn}
+                    onChange={(e) => setEditForm({...editForm, nidn: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                   Nama Lengkap

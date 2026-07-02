@@ -1,36 +1,30 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 
-export default function MonitoringLogbookPage() {
+// Sub-komponen untuk mengambil dan menampilkan logbook per mahasiswa
+function StudentLogbookList({ mahasiswaId }) {
   const [logbooks, setLogbooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/logbook?role=admin');
-      const data = await res.json();
-      setLogbooks(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const filteredLogbooks = logbooks.filter(log => {
-    const searchLower = searchQuery.toLowerCase();
-    const nama = log.mahasiswa_id?.nama_lengkap?.toLowerCase() || "";
-    const nim = log.mahasiswa_id?.nim_nidn?.toLowerCase() || "";
-    return nama.includes(searchLower) || nim.includes(searchLower);
-  });
+    let isMounted = true;
+    setLoading(true);
+    fetch(`/api/logbook?mhsId=${mahasiswaId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (isMounted) {
+          setLogbooks(Array.isArray(data) ? data : []);
+          setLoading(false);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+        if (isMounted) setLoading(false);
+      });
+    return () => { isMounted = false; };
+  }, [mahasiswaId]);
 
   const handleViewFile = (dataUrl) => {
     try {
@@ -58,11 +52,100 @@ export default function MonitoringLogbookPage() {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'menunggu_mentor': return <span className="px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-bold rounded-lg shadow-sm">⏳ Menunggu Mentor</span>;
-      case 'divalidasi_mentor': return <span className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg shadow-sm">🔹 Divalidasi Mentor</span>;
-      case 'divalidasi_dpl': return <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg shadow-sm">✅ Divalidasi DPL</span>;
-      case 'revisi': return <span className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-bold rounded-lg shadow-sm">❌ Direvisi</span>;
-      default: return <span className="px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg shadow-sm">{status}</span>;
+      case 'menunggu_mentor': return <span className="px-2 py-1 bg-yellow-50 text-yellow-700 border border-yellow-200 text-[10px] font-bold rounded shadow-sm">⏳ Menunggu Mentor</span>;
+      case 'divalidasi_mentor': return <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold rounded shadow-sm">🔹 Divalidasi Mentor</span>;
+      case 'divalidasi_dpl': return <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded shadow-sm">✅ Divalidasi DPL</span>;
+      case 'revisi': return <span className="px-2 py-1 bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold rounded shadow-sm">❌ Direvisi</span>;
+      default: return <span className="px-2 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-bold rounded shadow-sm">{status}</span>;
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse text-sm">Mengambil data logbook...</div>;
+  if (logbooks.length === 0) return <div className="p-8 text-center text-slate-500 text-sm">Belum ada riwayat logbook.</div>;
+
+  return (
+    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/30">
+      <div className="space-y-4">
+        {logbooks.map(log => (
+          <div key={log._id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-4">
+            <div className="shrink-0 w-32 border-r border-slate-100 dark:border-slate-700 pr-4">
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {new Date(log.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+              <div className="mt-2">{getStatusBadge(log.status_validasi)}</div>
+            </div>
+            
+            <div className="flex-1">
+              <p className="text-sm text-slate-700 dark:text-slate-300 mb-2 font-medium">{log.deskripsi_kegiatan}</p>
+              
+              {/* CPMK Indicators */}
+              {log.matched_indicators && log.matched_indicators.length > 0 && (
+                <details className="mt-2 group">
+                  <summary className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 select-none flex items-center gap-1">
+                    <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
+                    {log.matched_indicators.length} Target CPMK Terpenuhi
+                  </summary>
+                  <div className="mt-2 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900/30 space-y-2 py-1">
+                    {log.matched_indicators.map((ind, idx) => (
+                      <div key={idx}>
+                        <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">{ind.nama_cpmk}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ind.indikator}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+            
+            {log.bukti_kegiatan && (
+              <div className="shrink-0">
+                <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors border border-blue-200">
+                  🖼️ Bukti
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function MonitoringLogbookPage() {
+  const [pengajuans, setPengajuans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/pengajuan?admin=true&status=disetujui');
+      const data = await res.json();
+      setPengajuans(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const filteredPengajuans = pengajuans.filter(p => {
+    const searchLower = searchQuery.toLowerCase();
+    const nama = p.mahasiswa_id?.nama_lengkap?.toLowerCase() || "";
+    const nim = p.mahasiswa_id?.nim_nidn?.toLowerCase() || "";
+    return nama.includes(searchLower) || nim.includes(searchLower);
+  });
+
+  const toggleExpand = (id) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
     }
   };
 
@@ -74,7 +157,7 @@ export default function MonitoringLogbookPage() {
           <div className="w-full md:w-auto">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Monitoring Logbook</h2>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Pantau seluruh aktivitas logbook mahasiswa dari semua prodi dan mitra.
+              Pantau aktivitas mahasiswa per individu. Klik "Lihat Logbook" untuk menampilkan riwayat kegiatan mereka.
             </p>
           </div>
           <div className="w-full md:w-auto flex shrink-0 relative">
@@ -93,96 +176,70 @@ export default function MonitoringLogbookPage() {
 
         {/* Table Card */}
         {loading ? (
-          <div className="text-center py-20 text-slate-500 font-bold animate-pulse">Memuat data logbook...</div>
+          <div className="text-center py-20 text-slate-500 font-bold animate-pulse">Memuat data mahasiswa...</div>
         ) : (
           <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <th className="py-4 px-6 whitespace-nowrap w-56">Mahasiswa & Tgl</th>
-                    <th className="py-4 px-6 w-48">Penempatan</th>
-                    <th className="py-4 px-6">Deskripsi Kegiatan</th>
-                    <th className="py-4 px-6 text-center w-40">Status & Bukti</th>
+                    <th className="py-4 px-6 whitespace-nowrap">Mahasiswa</th>
+                    <th className="py-4 px-6">Lokasi Magang</th>
+                    <th className="py-4 px-6">DPL</th>
+                    <th className="py-4 px-6">Mentor</th>
+                    <th className="py-4 px-6 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                  {filteredLogbooks.length === 0 ? (
+                  {filteredPengajuans.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="py-12 text-center text-slate-500 font-medium">
+                      <td colSpan="5" className="py-12 text-center text-slate-500 font-medium">
                         <div className="text-4xl mb-3">📭</div>
-                        Tidak ada riwayat logbook yang ditemukan.
+                        Tidak ada mahasiswa magang aktif ditemukan.
                       </td>
                     </tr>
                   ) : (
-                    filteredLogbooks.map((log) => (
-                      <tr key={log._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                        <td className="py-5 px-6 align-top">
-                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{log.mahasiswa_id?.nama_lengkap}</p>
-                          <p className="text-xs text-slate-500 font-medium">{log.mahasiswa_id?.nim_nidn}</p>
-                          <p className="text-[11px] font-bold text-indigo-600 mt-2 bg-indigo-50 w-fit px-2 py-1 rounded-md">
-                            {new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        </td>
-                        <td className="py-5 px-6 align-top">
-                          <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {log.pengajuan_id?.detail_tempat?.nama || log.pengajuan_id?.posisi_id?.mitra_id?.nama_instansi || 'Mitra'}
-                          </p>
-                          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                            {log.pengajuan_id?.detail_tempat?.posisi || log.pengajuan_id?.posisi_id?.nama_posisi || 'Posisi Magang'}
-                          </p>
-                        </td>
-                        <td className="py-5 px-6 align-top">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed">{log.deskripsi_kegiatan}</p>
-                          <details className="mt-4 group">
-                            <summary className="cursor-pointer text-[11px] font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 select-none flex items-center gap-1.5 w-fit bg-indigo-50/50 hover:bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-full transition-colors border border-indigo-100 dark:border-indigo-800/30">
-                              <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
-                              Lihat Capaian Target CPMK
-                            </summary>
-                            <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                              {log.matched_indicators && log.matched_indicators.length > 0 ? (
-                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                                  <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                    <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi
-                                  </p>
-                                  <div className="space-y-3">
-                                    {log.matched_indicators.map((ind, idx) => (
-                                      <div key={idx} className="flex gap-2.5 items-start">
-                                        <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
-                                        <div>
-                                          <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">{ind.nama_cpmk}</p>
-                                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start">
-                                  <span className="text-amber-500">💡</span>
-                                  <div>
-                                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-0.5">
-                                      Tidak Memenuhi Target CPMK
-                                    </p>
-                                    <p className="text-[11px] text-amber-600 dark:text-amber-400/80 leading-relaxed mt-1">Kegiatan ini bersifat rutinitas biasa.</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </details>
-                        </td>
-                        <td className="py-5 px-6 align-top text-center space-y-3 flex flex-col items-center">
-                          {getStatusBadge(log.status_validasi)}
-                          
-                          {log.bukti_kegiatan ? (
-                            <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm mt-2 w-full justify-center cursor-pointer">
-                              <span>🖼️</span> Lihat Bukti
+                    filteredPengajuans.map((p) => (
+                      <React.Fragment key={p._id}>
+                        <tr className={`transition-colors ${expandedId === p.mahasiswa_id?._id ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/20'}`}>
+                          <td className="py-4 px-6 align-middle">
+                            <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{p.mahasiswa_id?.nama_lengkap}</p>
+                            <p className="text-xs text-slate-500 font-medium">{p.mahasiswa_id?.nim_nidn}</p>
+                          </td>
+                          <td className="py-4 px-6 align-middle">
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                              {p.detail_tempat?.nama || p.posisi_id?.mitra_id?.nama_instansi || '-'}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {p.detail_tempat?.posisi || p.posisi_id?.nama_posisi || '-'}
+                            </p>
+                          </td>
+                          <td className="py-4 px-6 align-middle">
+                            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{p.dpl_id?.nama_lengkap || <span className="text-slate-400 italic">Belum diset</span>}</p>
+                          </td>
+                          <td className="py-4 px-6 align-middle">
+                            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{p.mentor_id?.nama_lengkap || <span className="text-slate-400 italic">Belum diset</span>}</p>
+                          </td>
+                          <td className="py-4 px-6 align-middle text-center">
+                            <button 
+                              onClick={() => toggleExpand(p.mahasiswa_id?._id)}
+                              className="inline-flex items-center gap-2 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap shadow-sm dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800/50 dark:hover:bg-indigo-900/50"
+                            >
+                              <span>📋</span> {expandedId === p.mahasiswa_id?._id ? 'Tutup Logbook' : 'Lihat Logbook'}
                             </button>
-                          ) : (
-                            <span className="text-[11px] text-slate-400 italic bg-slate-50 px-2 py-1.5 rounded-md border border-slate-100 mt-2 block w-full text-center">Tanpa bukti</span>
-                          )}
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
+                        {/* Expandable Row Content */}
+                        {expandedId === p.mahasiswa_id?._id && (
+                          <tr>
+                            <td colSpan="5" className="p-0 border-b-2 border-indigo-200 dark:border-indigo-800/50">
+                              <div className="animate-in slide-in-from-top-2 fade-in duration-300">
+                                <StudentLogbookList mahasiswaId={p.mahasiswa_id?._id} />
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))
                   )}
                 </tbody>

@@ -16,7 +16,7 @@ export async function GET() {
     ]);
     const totalPosisiTersedia = posisiAgg[0]?.total || 0;
 
-    const totalAjuan = await PengajuanMagang.countDocuments();
+    const totalAjuan = await PengajuanMagang.countDocuments({ status_pengajuan: 'disetujui' });
     const antreanValidasi = await PengajuanMagang.countDocuments({ status_pengajuan: 'menunggu' });
     const posisiTerisi = await PengajuanMagang.countDocuments({ status_pengajuan: 'disetujui' });
 
