@@ -11,6 +11,10 @@ export default function LogbookPage() {
   const [logbooks, setLogbooks] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   // Form State
   const getTodayLocal = () => {
     if (typeof window === 'undefined') return "";
@@ -408,7 +412,7 @@ export default function LogbookPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {logbooks.map(log => (
+                {logbooks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(log => (
                   <div key={log._id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-3">
                       <div className="flex items-center gap-3">
@@ -517,6 +521,52 @@ export default function LogbookPage() {
                       )}
                     </div>
                 ))}
+                
+                {/* Pagination Controls */}
+                {Math.ceil(logbooks.length / itemsPerPage) > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8 pt-4">
+                    <button 
+                      onClick={() => {
+                        setCurrentPage(p => Math.max(1, p - 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-all"
+                    >
+                      Sebelumnya
+                    </button>
+                    
+                    <div className="flex items-center gap-1 hidden sm:flex">
+                      {Array.from({length: Math.ceil(logbooks.length / itemsPerPage)}, (_, i) => i + 1).map(page => (
+                        <button
+                          key={page}
+                          onClick={() => {
+                            setCurrentPage(page);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className={`w-10 h-10 rounded-xl text-sm font-bold flex items-center justify-center transition-all ${currentPage === page ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="sm:hidden text-sm font-bold text-slate-500 px-2">
+                      Hal {currentPage} dari {Math.ceil(logbooks.length / itemsPerPage)}
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        setCurrentPage(p => Math.min(Math.ceil(logbooks.length / itemsPerPage), p + 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === Math.ceil(logbooks.length / itemsPerPage)}
+                      className="px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-all"
+                    >
+                      Selanjutnya
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

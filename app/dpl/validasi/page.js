@@ -11,11 +11,13 @@ export default function DplValidasi() {
   const [toastMessage, setToastMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCpmk, setExpandedCpmk] = useState({});
+  const [activeTab, setActiveTab] = useState('antrean'); // 'antrean' or 'histori'
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const toggleCpmk = (id) => {
-    setExpandedCpmk(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-  const [activeTab, setActiveTab] = useState('antrean'); // 'antrean' or 'histori'
 
   const fetchData = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -104,7 +106,7 @@ export default function DplValidasi() {
               ? 'bg-slate-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
               : 'text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
           }`}
-          onClick={() => setActiveTab('antrean')}
+          onClick={() => { setActiveTab('antrean'); setCurrentPage(1); }}
         >
           ⏳ Perlu Perhatian
         </button>
@@ -114,7 +116,7 @@ export default function DplValidasi() {
               ? 'bg-slate-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
               : 'text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
           }`}
-          onClick={() => setActiveTab('histori')}
+          onClick={() => { setActiveTab('histori'); setCurrentPage(1); }}
         >
           📭 Riwayat (Tervalidasi)
         </button>
@@ -138,16 +140,25 @@ export default function DplValidasi() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {logbooks.filter(log => activeTab === 'antrean' ? log.status_validasi === 'menunggu_mentor' : log.status_validasi !== 'menunggu_mentor').length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
-                        <div className="text-4xl mb-3">{activeTab === 'antrean' ? '📚' : '📭'}</div>
-                        {activeTab === 'antrean' ? 'Semua logbook sudah divalidasi oleh Mentor.' : 'Belum ada riwayat logbook yang divalidasi.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    logbooks.filter(log => activeTab === 'antrean' ? log.status_validasi === 'menunggu_mentor' : log.status_validasi !== 'menunggu_mentor').map((log) => (
-                      <React.Fragment key={log._id}>
+                  {(() => {
+                    const filteredLogbooks = logbooks.filter(log => activeTab === 'antrean' ? log.status_validasi === 'menunggu_mentor' : log.status_validasi !== 'menunggu_mentor');
+                    if (filteredLogbooks.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="4" className="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
+                            <div className="text-4xl mb-3">{activeTab === 'antrean' ? '📚' : '📭'}</div>
+                            {activeTab === 'antrean' ? 'Semua logbook sudah divalidasi oleh Mentor.' : 'Belum ada riwayat logbook yang divalidasi.'}
+                          </td>
+                        </tr>
+                      );
+                    }
+                    const totalPages = Math.ceil(filteredLogbooks.length / itemsPerPage);
+                    const currentLogbooks = filteredLogbooks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                    
+                    return (
+                      <>
+                        {currentLogbooks.map((log) => (
+                          <React.Fragment key={log._id}>
                         <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                           <td className="py-4 px-6 align-top">
                             <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{log.mahasiswa_id?.nama_lengkap}</p>
@@ -259,8 +270,59 @@ export default function DplValidasi() {
                           </tr>
                         )}
                       </React.Fragment>
-                    ))
-                  )}
+                    ))}
+                    
+                    {totalPages > 1 && (
+                      <tr>
+                        <td colSpan="4" className="py-6 px-6">
+                          <div className="flex justify-center items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setCurrentPage(p => Math.max(1, p - 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              disabled={currentPage === 1}
+                              className="px-4 py-2 rounded-xl text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-all"
+                            >
+                              Sebelumnya
+                            </button>
+                            
+                            <div className="flex items-center gap-1 hidden sm:flex">
+                              {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
+                                <button
+                                  key={page}
+                                  onClick={() => {
+                                    setCurrentPage(page);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className={`w-10 h-10 rounded-xl text-sm font-bold flex items-center justify-center transition-all ${currentPage === page ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                                >
+                                  {page}
+                                </button>
+                              ))}
+                            </div>
+                            
+                            <div className="sm:hidden text-sm font-bold text-slate-500 dark:text-slate-400 px-2">
+                              Hal {currentPage} dari {totalPages}
+                            </div>
+        
+                            <button 
+                              onClick={() => {
+                                setCurrentPage(p => Math.min(totalPages, p + 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              disabled={currentPage === totalPages}
+                              className="px-4 py-2 rounded-xl text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-all"
+                            >
+                              Selanjutnya
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )}
+                })()}
                 </tbody>
               </table>
             </div>
