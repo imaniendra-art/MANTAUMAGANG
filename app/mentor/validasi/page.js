@@ -209,7 +209,7 @@ export default function MentorValidasi() {
                                   <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-sm cursor-pointer">
                                     <span>🖼️</span> Bukti
                                   </button>
-                                )}
+                                );
                                 <button 
                                   onClick={() => toggleCpmk(log._id)}
                                   className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap shadow-sm cursor-pointer"
@@ -245,7 +245,7 @@ export default function MentorValidasi() {
                                   <span>{log.status_validasi === 'revisi' ? '❌' : '✅'}</span>
                                   {log.status_validasi === 'revisi' ? 'Direvisi' : 'Divalidasi'}
                                 </span>
-                              )}
+                              );
                             </div>
                           </td>
                         </tr>
@@ -274,7 +274,7 @@ export default function MentorValidasi() {
                                                   {ind.alasan}
                                                 </p>
                                               </div>
-                                            )}
+                                            );
                                           </div>
                                         </div>
                                       ))}
@@ -290,11 +290,11 @@ export default function MentorValidasi() {
                                       <p className="text-[11px] text-amber-600 dark:text-amber-400/80 leading-relaxed mt-1">Kegiatan ini bersifat rutinitas. Mohon arahkan mahasiswa untuk melakukan variasi tugas lain agar target magang tercapai.</p>
                                     </div>
                                   </div>
-                                )}
+                                );
                               </div>
                             </td>
                           </tr>
-                        )}
+                        );
                       </React.Fragment>
                     ))}
                     
@@ -345,9 +345,9 @@ export default function MentorValidasi() {
                           </div>
                         </td>
                       </tr>
-                    )}
+                    );
                   </>
-                )}
+                );
                 })()}
                 </tbody>
               </table>
