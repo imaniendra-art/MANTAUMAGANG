@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Absensi from '@/models/Absensi';
+import { uploadToMinio } from '@/lib/minio';
 
 export async function GET(req) {
   await dbConnect();
@@ -29,6 +30,10 @@ export async function POST(req) {
   await dbConnect();
   try {
     const body = await req.json();
+    
+    if (body.foto_bukti && body.foto_bukti.startsWith('data:')) {
+      body.foto_bukti = await uploadToMinio(body.foto_bukti, 'absensi');
+    }
     
     // Check if already checked in today
     const existing = await Absensi.findOne({

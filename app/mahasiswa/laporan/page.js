@@ -67,8 +67,11 @@ export default function LaporanAkhirPage() {
     }
   };
 
-  const countChars = (sections) => {
-    return sections.reduce((acc, curr) => acc + (curr.content || '').length, 0);
+  const countWords = (sections) => {
+    return sections.reduce((acc, curr) => {
+      const text = (curr.content || '').trim();
+      return acc + (text === '' ? 0 : text.split(/\s+/).length);
+    }, 0);
   };
 
   const [formData, setFormData] = useState({
@@ -370,8 +373,8 @@ export default function LaporanAkhirPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-lg font-bold text-slate-800">BAB I. Pendahuluan</h3>
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${countChars(formData.bab1_sections) >= 1000 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {countChars(formData.bab1_sections)} / 1000 Karakter
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${countWords(formData.bab1_sections) >= 400 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {countWords(formData.bab1_sections)} / 400 Kata
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 mb-3">Pada bab ini akan menguraikan tentang latar belakang dan tujuan penulis dalam memilih program magang, serta manfaat yang diterima oleh penulis, kampus dan perusahaan.</p>
@@ -398,8 +401,8 @@ export default function LaporanAkhirPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-lg font-bold text-slate-800">BAB II. Profil Perusahaan</h3>
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${countChars(formData.bab2_sections) >= 1500 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {countChars(formData.bab2_sections)} / 1500 Karakter
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${countWords(formData.bab2_sections) >= 400 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {countWords(formData.bab2_sections)} / 400 Kata
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 mb-3">Pada bab ini akan menguraikan tentang profil perusahaan, visi, misi dan tujuan perusahaan, strategi bisnis, aspek manajemen, aspek produksi, aspek keuangan, aspek pemasaran, aspek sumber daya manusia, lingkup unit kerja, dan lokasi kantor perusahaan.</p>
@@ -407,6 +410,24 @@ export default function LaporanAkhirPage() {
                   {formData.bab2_sections.map((sec, idx) => (
                     <div key={sec.id}>
                       <label className="block text-sm font-bold text-slate-700 mb-1">{sec.title}</label>
+                      {sec.id === '2_3' && (
+                        <div className="mb-2 text-xs text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-start gap-2">
+                          <span className="text-base leading-none mt-0.5">ℹ️</span>
+                          <div className="w-full">
+                            <p className="mb-2">Anda juga dapat melampirkan <b>gambar/foto bagan struktur organisasi</b> (Opsional).</p>
+                            <div className="flex items-center">
+                              <input 
+                                disabled={['submitted', 'disetujui'].includes(formData.status)} 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handleFileChange(e, 'file_struktur_organisasi')} 
+                                className="text-xs w-full max-w-xs file:cursor-pointer file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-all" 
+                              />
+                              {formData.file_struktur_organisasi && <span className="ml-2 font-bold text-emerald-600 flex-shrink-0">✓ Tersimpan</span>}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <textarea
                         disabled={['submitted', 'disetujui'].includes(formData.status)}
                         value={sec.content}
@@ -426,8 +447,8 @@ export default function LaporanAkhirPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-lg font-bold text-slate-800">BAB III. Aktivitas Magang</h3>
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${countChars(formData.bab3_sections) >= 1500 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {countChars(formData.bab3_sections)} / 1500 Karakter
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${countWords(formData.bab3_sections) >= 400 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {countWords(formData.bab3_sections)} / 400 Kata
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 mb-3">Pada bab ini akan menguraikan tentang lingkup penugasan penulis, rencana dan penjadwalan kerja, serta deskripsi aktivitas harian yang dilakukan selama magang.</p>
@@ -454,8 +475,8 @@ export default function LaporanAkhirPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-lg font-bold text-slate-800">BAB IV. Permasalahan & Pembahasan Solusi</h3>
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${countChars(formData.bab4_sections) >= 1000 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {countChars(formData.bab4_sections)} / 1000 Karakter
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${countWords(formData.bab4_sections) >= 400 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {countWords(formData.bab4_sections)} / 400 Kata
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 mb-3">Pada bab ini akan menguraikan tentang masalah yang ditemukan penulis selama melaksanakan aktivitas magang, dimulai dari latar belakang, dampaknya terhadap penulis dan tim perusahaan serta solusi yang dilakukan oleh penulis.</p>
@@ -482,8 +503,8 @@ export default function LaporanAkhirPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-lg font-bold text-slate-800">BAB V. Kesimpulan & Rekomendasi</h3>
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${countChars(formData.bab5_sections) >= 1000 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {countChars(formData.bab5_sections)} / 1000 Karakter
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${countWords(formData.bab5_sections) >= 200 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {countWords(formData.bab5_sections)} / 200 Kata
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 mb-3">Pada bab ini akan menguraikan tentang kesimpulan yang dapat diambil dari aktivitas magang, masalah-masalah, serta solusi yang ditemukan. Selain itu terdapat rekomendasi dari penulis kepada pihak perusahaan, calon peserta magang selanjutnya, serta pihak kampus agar program magang kedepan dapat berjalan lebih baik.</p>
@@ -510,8 +531,8 @@ export default function LaporanAkhirPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-lg font-bold text-slate-800">BAB VI. Refleksi Diri</h3>
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${countChars(formData.bab6_sections) >= 1000 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {countChars(formData.bab6_sections)} / 1000 Karakter
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${countWords(formData.bab6_sections) >= 200 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {countWords(formData.bab6_sections)} / 200 Kata
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 mb-3">Pada bab ini akan menguraikan hal-hal positif dan manfaat yang diterima oleh penulis serta hal-hal yang menyadarkan penulis terhadap kekurangan penulis selama melaksanakan aktivitas magang.</p>
@@ -629,7 +650,7 @@ export default function LaporanAkhirPage() {
         </div>
 
         {/* Aksi Bawah */}
-        {formData.status !== 'submitted' && (
+        {!['submitted', 'disetujui'].includes(formData.status) && (
           <div className="mt-8 flex justify-end gap-4">
             <button onClick={() => handleSave(false)} disabled={isSaving} className="px-8 py-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50">
               {isSaving ? 'Menyimpan...' : 'Simpan Draf'}

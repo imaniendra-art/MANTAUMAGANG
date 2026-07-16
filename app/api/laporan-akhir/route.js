@@ -6,7 +6,7 @@ import LaporanAkhir from '@/models/LaporanAkhir';
 import PaketMatkul from '@/models/PaketMatkul';
 import MitraMagang from '@/models/MitraMagang';
 import Logbook from '@/models/Logbook';
-
+import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
 export async function GET(request) {
   await dbConnect();
   try {
@@ -92,6 +92,23 @@ export async function POST(request) {
     }
 
     let laporan = await LaporanAkhir.findOne({ pengajuan_id: pengajuan._id });
+
+    // Helper untuk menangani upload file MinIO
+    const handleFileUpload = async (base64Data, oldUrl, folder) => {
+      if (base64Data && base64Data.startsWith('data:')) {
+        if (oldUrl) {
+          try { await deleteFromMinio(oldUrl); } catch (e) { console.error("Error deleting old file:", e); }
+        }
+        return await uploadToMinio(base64Data, folder);
+      }
+      return base64Data;
+    };
+
+    const newPengantar = file_pengantar !== undefined ? await handleFileUpload(file_pengantar, laporan?.file_pengantar, 'laporan/pengantar') : undefined;
+    const newPenerimaan = file_penerimaan !== undefined ? await handleFileUpload(file_penerimaan, laporan?.file_penerimaan, 'laporan/penerimaan') : undefined;
+    const newKeterangan = file_keterangan !== undefined ? await handleFileUpload(file_keterangan, laporan?.file_keterangan, 'laporan/keterangan') : undefined;
+    const newStruktur = file_struktur_organisasi !== undefined ? await handleFileUpload(file_struktur_organisasi, laporan?.file_struktur_organisasi, 'laporan/struktur') : undefined;
+
     if (laporan) {
       // Update
       laporan.bab1_pendahuluan = bab1_pendahuluan ?? laporan.bab1_pendahuluan;
@@ -100,10 +117,10 @@ export async function POST(request) {
       laporan.bab4_permasalahan = bab4_permasalahan ?? laporan.bab4_permasalahan;
       laporan.bab5_kesimpulan = bab5_kesimpulan ?? laporan.bab5_kesimpulan;
       laporan.bab6_refleksi = bab6_refleksi ?? laporan.bab6_refleksi;
-      laporan.file_pengantar = file_pengantar ?? laporan.file_pengantar;
-      laporan.file_penerimaan = file_penerimaan ?? laporan.file_penerimaan;
-      laporan.file_keterangan = file_keterangan ?? laporan.file_keterangan;
-      laporan.file_struktur_organisasi = file_struktur_organisasi ?? laporan.file_struktur_organisasi;
+      laporan.file_pengantar = newPengantar !== undefined ? newPengantar : laporan.file_pengantar;
+      laporan.file_penerimaan = newPenerimaan !== undefined ? newPenerimaan : laporan.file_penerimaan;
+      laporan.file_keterangan = newKeterangan !== undefined ? newKeterangan : laporan.file_keterangan;
+      laporan.file_struktur_organisasi = newStruktur !== undefined ? newStruktur : laporan.file_struktur_organisasi;
       laporan.status = status ?? laporan.status;
       await laporan.save();
     } else {
@@ -117,10 +134,10 @@ export async function POST(request) {
         bab4_permasalahan,
         bab5_kesimpulan,
         bab6_refleksi,
-        file_pengantar,
-        file_penerimaan,
-        file_keterangan,
-        file_struktur_organisasi,
+        file_pengantar: newPengantar,
+        file_penerimaan: newPenerimaan,
+        file_keterangan: newKeterangan,
+        file_struktur_organisasi: newStruktur,
         status: status || 'draft'
       });
     }

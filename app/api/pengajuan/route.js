@@ -5,6 +5,7 @@ import User from '@/models/User';
 import PaketMatkul from '@/models/PaketMatkul';
 import fs from 'fs';
 import path from 'path';
+import { uploadToMinio } from '@/lib/minio';
 
 export async function POST(req) {
   await dbConnect();
@@ -35,17 +36,9 @@ export async function POST(req) {
       if (file_cv && typeof file_cv === 'object') {
         const bytes = await file_cv.arrayBuffer();
         const buffer = Buffer.from(bytes);
-
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'cv');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        const fileName = `${Date.now()}-${file_cv.name}`;
-        const filePath = path.join(uploadDir, fileName);
-
-        await fs.promises.writeFile(filePath, buffer);
-        file_cv_path = `/uploads/cv/${fileName}`;
+        
+        const base64Data = `data:${file_cv.type || 'application/pdf'};base64,${buffer.toString('base64')}`;
+        file_cv_path = await uploadToMinio(base64Data, 'cv');
       }
     } else {
       payload = await req.json();

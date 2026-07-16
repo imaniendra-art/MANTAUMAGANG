@@ -14,31 +14,45 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "Tidak sah, silakan login" }, { status: 401 });
     }
 
-    const { oldPassword, newPassword } = await req.json();
-
-    if (!oldPassword || !newPassword) {
-      return NextResponse.json({ error: "Password lama dan password baru wajib diisi" }, { status: 400 });
-    }
+    const { oldPassword, newPassword, nidn, nomor_hp, email } = await req.json();
 
     const user = await User.findById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
     }
 
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      return NextResponse.json({ error: "Password lama salah" }, { status: 400 });
+    // Perbarui password jika oldPassword dan newPassword diberikan
+    if (oldPassword && newPassword) {
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return NextResponse.json({ error: "Password lama salah" }, { status: 400 });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      user.password = hashedPassword;
+      user.isFirstLogin = false;
+    } else if (oldPassword || newPassword) {
+      return NextResponse.json({ error: "Password lama dan baru harus diisi untuk mengubah password" }, { status: 400 });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    // Perbarui info profil jika diberikan
+    if (nidn !== undefined) user.nidn = nidn;
+    if (nomor_hp !== undefined) user.nomor_hp = nomor_hp;
+    if (email !== undefined && email !== user.email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail && existingEmail._id.toString() !== user._id.toString()) {
+        return NextResponse.json({ error: "Email sudah digunakan oleh pengguna lain" }, { status: 400 });
+      }
+      user.email = email;
+    }
 
-    user.password = hashedPassword;
-    user.isFirstLogin = false;
     await user.save();
 
-    return NextResponse.json({ message: "Password berhasil diubah" });
+    return NextResponse.json({ message: "Profil berhasil diperbarui" });
   } catch (error) {
+    console.error("Error update profil:", error);
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
   }
 }

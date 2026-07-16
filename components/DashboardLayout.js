@@ -142,6 +142,7 @@ const MENU_CONFIG = {
       { name: "Daftar Bimbingan", href: "/dpl/bimbingan", icon: "📋", desc: "Pantau dan konfirmasi penyerahan mahasiswa", color: "from-blue-500 to-indigo-600" },
       { name: "Validasi Logbook", href: "/dpl/validasi", icon: "✍️", desc: "Review dan validasi logbook harian mahasiswa", color: "from-emerald-500 to-teal-600" },
       { name: "Validasi Laporan", href: "/dpl/validasi-laporan", icon: "📑", desc: "Persetujuan Laporan Akhir", color: "from-purple-500 to-purple-600" },
+      { name: "Evaluasi Akhir", href: "/dpl/evaluasi", icon: "🎓", desc: "Pleno dan penginputan nilai mutlak", color: "from-pink-500 to-rose-600" },
       { name: "Petunjuk Magang", href: "/dpl/petunjuk", icon: "📚", desc: "Panduan pembimbingan dan rincian target CPMK", color: "from-amber-500 to-orange-600" },
     ],
   },

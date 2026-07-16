@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Logbook from '@/models/Logbook';
 import PengajuanMagang from '@/models/PengajuanMagang';
 import User from '@/models/User'; 
-
+import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
 export async function GET(req) {
   await dbConnect();
   try {
@@ -81,6 +81,9 @@ export async function POST(req) {
   await dbConnect();
   try {
     const data = await req.json();
+    if (data.bukti_kegiatan && data.bukti_kegiatan.startsWith('data:')) {
+      data.bukti_kegiatan = await uploadToMinio(data.bukti_kegiatan, 'logbook');
+    }
     const newLog = await Logbook.create(data);
     return NextResponse.json(newLog, { status: 201 });
   } catch (error) {
@@ -103,7 +106,17 @@ export async function PATCH(req) {
     if (catatan_revisi !== undefined) updateData.catatan_revisi = catatan_revisi;
     if (deskripsi_kegiatan) updateData.deskripsi_kegiatan = deskripsi_kegiatan;
     if (bukti_link !== undefined) updateData.bukti_link = bukti_link;
-    if (bukti_kegiatan) updateData.bukti_kegiatan = bukti_kegiatan;
+    if (bukti_kegiatan) {
+      if (bukti_kegiatan.startsWith('data:')) {
+        const logbook = await Logbook.findById(id);
+        if (logbook && logbook.bukti_kegiatan && !logbook.bukti_kegiatan.startsWith('data:')) {
+          try { await deleteFromMinio(logbook.bukti_kegiatan); } catch (e) { console.error("Error deleting old file:", e); }
+        }
+        updateData.bukti_kegiatan = await uploadToMinio(bukti_kegiatan, 'logbook');
+      } else {
+        updateData.bukti_kegiatan = bukti_kegiatan;
+      }
+    }
     if (matched_indicators) updateData.matched_indicators = matched_indicators;
 
     if (status_validasi === 'divalidasi_mentor') {
