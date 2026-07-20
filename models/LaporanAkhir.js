@@ -22,6 +22,7 @@ const LaporanAkhirSchema = new mongoose.Schema({
   file_keterangan: { type: String, default: '' },
   file_struktur_organisasi: { type: String, default: '' },
   catatan_dpl: { type: String, default: '' },
+  nomor_sertifikat: { type: String, default: '' },
   status: {
     type: String,
     enum: ['draft', 'submitted', 'revisi', 'disetujui'],

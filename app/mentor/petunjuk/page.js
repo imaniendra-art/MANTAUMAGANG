@@ -22,7 +22,7 @@ export default function PetunjukMentor() {
 
   return (
     <DashboardLayout title="Petunjuk & Panduan Mentor">
-      <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      <div className="w-full space-y-6 pb-12">
         {/* Banner Penjelasan */}
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
@@ -32,7 +32,7 @@ export default function PetunjukMentor() {
             <h1 className="text-3xl font-black mb-4 flex items-center gap-3">
               <span>👋</span> Selamat Datang, Mentor!
             </h1>
-            <div className="space-y-4 text-emerald-50 text-sm md:text-base leading-relaxed max-w-3xl font-medium">
+            <div className="space-y-4 text-emerald-50 text-sm md:text-base leading-relaxed font-medium">
               <p>
                 Sebagai <strong>Mentor Industri</strong>, Anda adalah ujung tombak dalam membimbing mahasiswa mempraktikkan ilmu mereka di dunia nyata. Program <strong>Magang Berdampak</strong> ini dirancang bukan sekadar untuk menjadikan mahasiswa sebagai tenaga bantuan administratif, melainkan agar mereka mampu memberikan <em>dampak nyata</em> melalui proyek inovasi dan penyelesaian masalah di instansi Anda.
               </p>

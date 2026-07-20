@@ -25,7 +25,7 @@ export default function Home() {
         <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0"></div>
 
         {/* NAVBAR - LEBIH LEBAR */}
-        <nav className="w-full px-8 lg:px-[5cm] py-6 flex justify-between items-center relative z-10">
+        <nav className="w-full px-8 lg:px-16 xl:px-24 py-6 flex justify-between items-center relative z-10">
           <div className="flex items-center gap-3 lg:gap-4">
             <Image src="/mm_white.png" alt="Mantau Magang Logo" width={180} height={60} className="h-10 lg:h-12 w-auto object-contain drop-shadow-md" priority />
             <div className="text-lg lg:text-xl font-extrabold tracking-widest text-slate-100 border-l border-slate-500/50 pl-3 lg:pl-4 h-8 lg:h-10 flex items-center">
@@ -44,7 +44,7 @@ export default function Home() {
         </nav>
 
         {/* HERO SECTION - LEBIH LEBAR */}
-        <section className="w-full px-8 lg:px-[5cm] relative z-10 flex items-center min-h-[450px]">
+        <section className="w-full px-8 lg:px-16 xl:px-24 relative z-10 flex items-center min-h-[450px]">
           {/* Kiri: Teks */}
           <div className="relative z-20 w-full lg:w-[65%] space-y-8 py-16">
             <div className="inline-block px-4 py-1 rounded-full border border-blue-400/30 bg-blue-900/30 text-blue-300 text-sm font-medium backdrop-blur-sm">
@@ -75,7 +75,7 @@ export default function Home() {
       </div>
 
       {/* AREA KONTEN BAWAH */}
-      <section className="w-full px-8 lg:px-[5cm] -mt-24 relative z-20 pb-16">
+      <section className="w-full px-8 lg:px-16 xl:px-24 -mt-24 relative z-20 pb-16">
         <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_rgb(0,0,0,0.06)] p-10 lg:p-16 border border-white/50">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Apa itu Magang Berdampak STIMI YAPMI ?</h2>
@@ -116,7 +116,7 @@ export default function Home() {
       </section>
 
       {/* ETALASE PERUSAHAAN & POSISI */}
-      <section className="w-full px-8 lg:px-[5cm] pb-24 relative z-20">
+      <section className="w-full px-8 lg:px-16 xl:px-24 pb-24 relative z-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Temukan Lokasi Magang</h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">

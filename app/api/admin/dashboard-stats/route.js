@@ -4,10 +4,15 @@ import MitraMagang from '@/models/MitraMagang';
 import PosisiMagang from '@/models/PosisiMagang';
 import PengajuanMagang from '@/models/PengajuanMagang';
 import User from '@/models/User';
+import Periode from '@/models/Periode';
 
 export async function GET() {
   await dbConnect();
   try {
+    const activePeriode = await Periode.findOne({ is_active: true }).lean();
+    const hasActivePeriode = !!activePeriode;
+    const activePeriodeName = activePeriode ? activePeriode.nama_periode : null;
+
     const totalMitra = await MitraMagang.countDocuments();
     
     // Aggregation for Posisi
@@ -67,7 +72,9 @@ export async function GET() {
       antreanValidasi,
       posisiTerisi,
       konsentrasiStats,
-      aktivitasTerbaru: safeAktivitas
+      aktivitasTerbaru: safeAktivitas,
+      hasActivePeriode,
+      activePeriodeName
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

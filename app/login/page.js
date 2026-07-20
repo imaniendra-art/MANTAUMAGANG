@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../components/ThemeContext';
 
 export default function Login() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -71,7 +74,25 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0F172A] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0F172A] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Theme Toggle Button */}
+      <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-50">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="relative w-14 h-7 rounded-full transition-all duration-500 flex items-center bg-slate-200 border-slate-300 hover:bg-slate-300 dark:bg-white/[0.08] dark:border-white/[0.1] dark:hover:bg-white/[0.12]"
+          title={isDark ? "Beralih ke mode terang" : "Beralih ke mode gelap"}
+        >
+          <div className={`absolute w-5 h-5 rounded-full transition-all duration-500 flex items-center justify-center shadow-lg ${
+            isDark
+              ? 'left-1 bg-blue-500 text-white shadow-blue-500/30'
+              : 'left-8 bg-amber-400 text-white shadow-amber-400/30'
+          }`}>
+            {isDark ? <Moon size={14} /> : <Sun size={14} />}
+          </div>
+        </button>
+      </div>
+
       {/* Grid lines background — penciri */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
         backgroundSize: '60px 60px',
@@ -81,14 +102,17 @@ export default function Login() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/8 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/8 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-md w-full relative z-10 space-y-8 bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none backdrop-blur-xl p-10 rounded-3xl shadow-[0_8px_60px_rgb(0,0,0,0.3)] border border-slate-200 dark:border-slate-700">
+      <div className="max-w-md w-full relative z-10 space-y-8 bg-white/50 dark:bg-slate-800/40 backdrop-blur-xl shadow-[0_8px_60px_rgb(0,0,0,0.1)] dark:shadow-[0_8px_60px_rgb(0,0,0,0.3)] p-10 rounded-3xl border border-slate-200 dark:border-slate-700">
         <div>
-          <div className="text-center">
-            <Link href="/" className="inline-block mb-2">
-              <img src="/mm_white.png" alt="MANTAUMAGANG Logo" className="h-12 mx-auto" />
+          <div className="flex justify-center items-center gap-4 sm:gap-6 mb-2">
+            <img src="/logo_stimi.png" alt="STIMI Logo" className="h-10 sm:h-12 w-auto object-contain drop-shadow-sm" />
+            <Link href="/" className="inline-block border-x border-slate-300 dark:border-slate-600 px-4 sm:px-6">
+              <img src="/mm.png" alt="MANTAUMAGANG Logo" className="h-10 sm:h-12 w-auto block dark:hidden" />
+              <img src="/mm_white.png" alt="MANTAUMAGANG Logo" className="h-10 sm:h-12 w-auto hidden dark:block" />
             </Link>
+            <img src="/logo_berdampak.png" alt="Berdampak Logo" className="h-10 sm:h-12 w-auto object-contain drop-shadow-sm" />
           </div>
-          <h2 className="mt-4 text-center text-3xl font-extrabold text-white">
+          <h2 className="mt-4 text-center text-3xl font-extrabold text-slate-900 dark:text-white">
             Selamat Datang
           </h2>
           <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -103,13 +127,7 @@ export default function Login() {
             </div>
           )}
           
-          <div className="bg-blue-500/10 backdrop-blur-sm border border-blue-500/20 text-blue-300 p-4 rounded-xl text-sm mb-6">
-            <p className="text-sm font-medium leading-relaxed">
-              <span className="font-bold mr-1">💡 Informasi:</span> 
-              Gunakan ID / Username / NIM Anda untuk masuk. <strong>Password default adalah Nomor HP Anda</strong> (atau gunakan NIM/ID jika Nomor HP kosong). 
-              Pastikan untuk segera memperbarui password setelah berhasil masuk.
-            </p>
-          </div>
+          {/* Info block removed */}
           
           <div className="space-y-5">
             <div>
@@ -129,7 +147,6 @@ export default function Login() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-bold text-slate-500 dark:text-slate-400" htmlFor="password">Password</label>
-                <a href="#" className="text-xs font-bold text-blue-400 hover:text-blue-300">Lupa password?</a>
               </div>
               <div className="relative">
                 <input

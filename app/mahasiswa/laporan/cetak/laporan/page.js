@@ -53,10 +53,16 @@ export default function CetakLaporan() {
       `}</style>
       
       {/* Tombol Print (Sembunyi saat diprint) */}
-      <div className="fixed top-5 right-5 print:hidden">
-        <button onClick={() => window.print()} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700">
-          🖨️ Cetak PDF
+      <div className="fixed top-5 right-5 print:hidden z-50 flex flex-col items-end">
+        <button onClick={() => window.print()} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 flex items-center gap-2 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Cetak / Simpan PDF
         </button>
+        <p className="text-xs text-center mt-2 text-slate-500 font-medium bg-white/80 p-2 rounded shadow backdrop-blur-sm">
+          Pilih <strong>Save as PDF</strong> di pengaturan browser.<br/>Margin 1 inch otomatis diterapkan.
+        </p>
       </div>
 
       {/* Kontainer Kertas A4 */}
@@ -85,6 +91,7 @@ export default function CetakLaporan() {
             <p className="text-xl font-bold uppercase">{mhs.nama_lengkap}</p>
             <p className="text-lg font-bold">{mhs.nim_nidn}</p>
             {mhs.program_studi && <p className="text-lg font-bold uppercase">{mhs.program_studi}</p>}
+            {mhs.konsentrasi && <p className="text-lg font-bold uppercase">KONSENTRASI {mhs.konsentrasi}</p>}
           </div>
 
           {/* FOOTER (Bottom) */}
@@ -177,12 +184,12 @@ export default function CetakLaporan() {
               {safeParse(laporan.bab2_profil).map(sec => (
                 <div key={sec.id}>
                   <h3 className="font-bold text-lg mb-2">{sec.title}</h3>
-                  <div className="whitespace-pre-wrap pl-6">{sec.content}</div>
                   {sec.id === '2_3' && laporan.file_struktur_organisasi && (
-                    <div className="mt-4 pl-6">
+                    <div className="mb-4 pl-6">
                       <img src={laporan.file_struktur_organisasi} alt="Struktur Organisasi" className="max-w-full h-auto border border-slate-200 p-2" />
                     </div>
                   )}
+                  <div className="whitespace-pre-wrap pl-6">{sec.content}</div>
                 </div>
               ))}
             </div>
@@ -294,7 +301,9 @@ export default function CetakLaporan() {
                   {logbooks.map((log, idx) => (
                     <tr key={log._id}>
                       <td className="border border-slate-800 p-2 text-center align-top">{idx + 1}</td>
-                      <td className="border border-slate-800 p-2 text-center align-top">{new Date(log.tanggal).toLocaleDateString('id-ID')}</td>
+                      <td className="border border-slate-800 p-2 text-center align-top">
+                        {['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][new Date(log.tanggal).getDay()]}, {new Date(log.tanggal).toLocaleDateString('id-ID')}
+                      </td>
                       <td className="border border-slate-800 p-2 text-left whitespace-pre-wrap">{log.deskripsi_kegiatan}</td>
                     </tr>
                   ))}
@@ -307,11 +316,24 @@ export default function CetakLaporan() {
             <div className="p-[3cm] min-h-[29.7cm] print:min-h-0 print:p-0">
               <h2 className="text-center font-bold text-xl mb-6">LAMPIRAN: DOKUMENTASI KEGIATAN</h2>
               <div className="grid grid-cols-3 gap-4">
-                {logbooks.filter(log => log.bukti_kegiatan).map((log, idx) => (
-                  <div key={log._id} className="border border-slate-300 p-2 rounded break-inside-avoid">
-                    <img src={log.bukti_kegiatan} className="w-full h-auto aspect-square object-cover" alt={`Dokumentasi ${idx+1}`} />
-                    <div className="text-center text-xs mt-2 text-slate-600">
-                      Tanggal: {new Date(log.tanggal).toLocaleDateString('id-ID')}
+                {logbooks.flatMap(log => {
+                   const docs = [];
+                   if (log.dokumentasi && log.dokumentasi.length > 0) {
+                      log.dokumentasi.forEach((doc, idx) => {
+                         docs.push({ file: doc.file, keterangan: doc.keterangan, tanggal: log.tanggal, key: `${log._id}-${idx}` });
+                      });
+                   } else if (log.bukti_kegiatan) {
+                      docs.push({ file: log.bukti_kegiatan, keterangan: "Dokumentasi Kegiatan", tanggal: log.tanggal, key: log._id });
+                   }
+                   return docs;
+                }).map((doc, idx) => (
+                  <div key={doc.key} className="border border-slate-300 p-2 rounded break-inside-avoid">
+                    <img src={doc.file} className="w-full h-auto aspect-square object-cover" alt={`Dokumentasi ${idx+1}`} />
+                    <div className="text-center text-xs mt-2 text-slate-600 font-bold">
+                      {['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][new Date(doc.tanggal).getDay()]}, {new Date(doc.tanggal).toLocaleDateString('id-ID')}
+                    </div>
+                    <div className="text-center text-[10px] mt-1 text-slate-800 italic">
+                      {doc.keterangan}
                     </div>
                   </div>
                 ))}

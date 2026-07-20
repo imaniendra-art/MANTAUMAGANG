@@ -128,7 +128,7 @@ function DetailContent() {
 
   return (
     <DashboardLayout title="Detail Posisi Magang">
-      <div className="container mx-auto px-4 max-w-7xl space-y-6 mb-10">
+      <div className="container mx-auto px-4 w-full space-y-6 mb-10">
         
         <div className="flex flex-col lg:flex-row gap-8">
           {/* KOLOM KIRI: Informasi Utama */}

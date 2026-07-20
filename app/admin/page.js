@@ -50,6 +50,23 @@ export default function AdminDashboard() {
 
     return (
       <div className="w-full space-y-10">
+        {!stats.hasActivePeriode && (
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-6 rounded-r-2xl shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="text-red-500 text-3xl">⚠️</div>
+              <div>
+                <h3 className="text-lg font-bold text-red-800 dark:text-red-400 mb-1">Perhatian: Periode Aktif Belum Diatur!</h3>
+                <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                  Saat ini tidak ada periode magang yang aktif. Mahasiswa tidak akan dapat melakukan pengajuan atau mengakses fitur magang. Anda diwajibkan untuk membuat atau mengaktifkan periode magang terlebih dahulu.
+                </p>
+                <Link href="/admin/settings" className="inline-block bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors">
+                  Atur Periode Sekarang
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-5">
           
           {/* Card 1: Total Mitra */}
@@ -159,7 +176,24 @@ export default function AdminDashboard() {
   };
 
   return (
-    <DashboardLayout title="Dashboard Admin & Prodi" notifications={renderContent()}>
+    <DashboardLayout 
+      title="Dashboard Admin & Prodi" 
+      notifications={renderContent()}
+      heroRightContent={
+        stats?.hasActivePeriode ? (
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800/50 px-5 py-3 rounded-xl flex items-center gap-3">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+            </span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-0.5">Periode Aktif</p>
+              <p className="text-sm font-black text-indigo-900 dark:text-indigo-300">{stats.activePeriodeName}</p>
+            </div>
+          </div>
+        ) : null
+      }
+    >
     </DashboardLayout>
   );
 }

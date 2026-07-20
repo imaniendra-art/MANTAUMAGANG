@@ -41,7 +41,9 @@ export async function GET(request) {
     const pengajuan = await PengajuanMagang.findOne({ mahasiswa_id: mhsId, status_pengajuan: 'disetujui' })
       .populate('paket_matkul_id')
       .populate('mitra_id')
-      .populate('mahasiswa_id');
+      .populate('mahasiswa_id')
+      .populate('dpl_id')
+      .populate('mentor_id');
     if (!pengajuan) {
       return NextResponse.json({ error: "Pengajuan tidak ditemukan atau belum disetujui" }, { status: 404 });
     }
@@ -52,6 +54,12 @@ export async function GET(request) {
         pengajuan_id: pengajuan._id,
         mahasiswa_id: mhsId
       });
+    } else if (laporan.status === 'disetujui' && !laporan.nomor_sertifikat) {
+      // Auto-generate nomor sertifikat for existing approved reports
+      const year = new Date().getFullYear();
+      const uniqueStr = laporan._id.toString().slice(-5).toUpperCase();
+      laporan.nomor_sertifikat = `MM/STIMI-YAPMI/${year}/${uniqueStr}`;
+      await laporan.save();
     }
 
     const logbooks = await Logbook.find({ pengajuan_id: pengajuan._id }).sort({ tanggal: 1 });
@@ -167,6 +175,12 @@ export async function PATCH(request) {
     laporan.status = status;
     if (catatan_dpl !== undefined) {
       laporan.catatan_dpl = catatan_dpl;
+    }
+
+    if (status === 'disetujui' && !laporan.nomor_sertifikat) {
+      const year = new Date().getFullYear();
+      const uniqueStr = laporan._id.toString().slice(-5).toUpperCase();
+      laporan.nomor_sertifikat = `MM/STIMI-YAPMI/${year}/${uniqueStr}`;
     }
 
     await laporan.save();

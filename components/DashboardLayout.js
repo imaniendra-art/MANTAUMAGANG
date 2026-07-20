@@ -151,6 +151,7 @@ const MENU_CONFIG = {
     subtitle: "Validasi logbook harian dan pantau perkembangan mahasiswa magang.",
     menus: [
       { name: "Validasi Logbook", href: "/mentor/validasi", icon: "✍️", desc: "Review dan validasi logbook harian mahasiswa", color: "from-cyan-500 to-blue-600" },
+      { name: "Penilaian Mahasiswa", href: "/mentor/evaluasi", icon: "💯", desc: "Berikan evaluasi akhir untuk mahasiswa", color: "from-violet-500 to-fuchsia-600" },
       { name: "Petunjuk Magang", href: "/mentor/petunjuk", icon: "📚", desc: "Panduan mentoring dan rincian target CPMK", color: "from-emerald-500 to-teal-600" },
     ],
   },
@@ -168,6 +169,7 @@ const SUB_PAGE_TITLES = {
   "/dpl/validasi-laporan": "Validasi Laporan Akhir",
   "/dpl/evaluasi": "Evaluasi Akhir",
   "/mentor/validasi": "Validasi Logbook",
+  "/mentor/evaluasi": "Penilaian Mahasiswa",
 };
 
 // ═══════════════════════ GRID BACKGROUND ═══════════════════════
@@ -187,7 +189,7 @@ function GridBackground({ isDark, size = 60 }) {
 }
 
 // ═══════════════════════ MAIN EXPORT ═══════════════════════
-export default function DashboardLayout({ children, title = "Dashboard", notifications = null, backPath = null }) {
+export default function DashboardLayout({ children, title = "Dashboard", notifications = null, backPath = null, heroRightContent = null }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const router = useRouter();
@@ -226,7 +228,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
 
         {/* Sticky Header */}
         <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800">
-          <div className="w-full px-8 lg:px-[5cm] py-4 flex items-center justify-between">
+          <div className="w-full px-8 lg:px-16 xl:px-24 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push(parentPath)}
@@ -246,7 +248,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
         </header>
 
         {/* Sub-page Content */}
-        <main className="relative w-full px-8 lg:px-[5cm] py-8">
+        <main className="relative w-full px-8 lg:px-16 xl:px-24 py-8">
           <div className="w-full">
             {children}
           </div>
@@ -264,7 +266,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/[0.06] dark:from-indigo-500/10 to-transparent rounded-full pointer-events-none" />
 
       {/* ═══════════════ NAVBAR ═══════════════ */}
-      <nav className="w-full px-8 lg:px-[5cm] py-5 flex justify-between items-center relative z-50">
+      <nav className="w-full px-8 lg:px-16 xl:px-24 py-5 flex justify-between items-center relative z-50">
         <Link href="/" className="flex items-center">
           <img src="/mm.png" alt="Logo" className="h-[50px] block dark:hidden" />
           <img src="/mm_white.png" alt="Logo" className="h-[50px] hidden dark:block" />
@@ -276,7 +278,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
       </nav>
 
       {/* ═══════════════ HERO SECTION ═══════════════ */}
-      <section className="relative z-10 w-full px-8 lg:px-[5cm] pt-6">
+      <section className="relative z-10 w-full px-8 lg:px-16 xl:px-24 pt-6">
         <div className="relative rounded-[2rem] p-8 lg:p-10 overflow-hidden border bg-[#0F172A]/15 dark:bg-gradient-to-br dark:from-[#0F172A] dark:via-[#1E293B] dark:to-[#0F172A] backdrop-blur-xl border-slate-300/50 dark:border-slate-800">
           {/* Hero grid overlay (SVG) */}
           <div className="absolute inset-0 pointer-events-none rounded-[2rem] overflow-hidden opacity-100">
@@ -296,25 +298,35 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
             <div className="inline-block px-4 py-1.5 rounded-full border border-blue-400/30 dark:border-blue-400/20 bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-widest mb-4">
               {role.replace('_', ' ')} Panel
             </div>
-            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight mb-3">
-              Selamat Datang, <span className="text-blue-600 dark:text-blue-400">{nama.split(' ')[0]}</span>!
-            </h1>
-            <p className="text-lg text-slate-700 dark:text-slate-300 max-w-3xl leading-relaxed">
-              {config.subtitle}
-            </p>
+            <div className="flex flex-wrap justify-between items-start gap-4">
+              <div>
+                <h1 className="text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight mb-3">
+                  Selamat Datang, <span className="text-blue-600 dark:text-blue-400">{nama.split(' ')[0]}</span>!
+                </h1>
+                <p className="text-lg text-slate-700 dark:text-slate-300 max-w-3xl leading-relaxed">
+                  {config.subtitle}
+                </p>
+              </div>
+              
+              {heroRightContent && (
+                <div className="shrink-0 mt-2 sm:mt-0">
+                  {heroRightContent}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ═══════════════ NOTIFICATION CARDS / HIGHLIGHTS ═══════════════ */}
       {notifications && (
-        <section className="relative z-10 w-full px-8 lg:px-[5cm] mt-6 mb-10">
+        <section className="relative z-10 w-full px-8 lg:px-16 xl:px-24 mt-6 mb-10">
           {notifications}
         </section>
       )}
 
       {/* ═══════════════ MENU CARDS ═══════════════ */}
-      <section className="relative z-10 w-full px-8 lg:px-[5cm] pb-20">
+      <section className="relative z-10 w-full px-8 lg:px-16 xl:px-24 pb-20">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-1 h-6 bg-blue-500 rounded-full" />
           <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Menu Utama</h2>
@@ -361,7 +373,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
 
       {/* ═══════════════ EXTRA CONTENT (CHILDREN) ═══════════════ */}
       {children && (
-        <section className="relative z-10 w-full px-8 lg:px-[5cm] pb-20">
+        <section className="relative z-10 w-full px-8 lg:px-16 xl:px-24 pb-20">
           {children}
         </section>
       )}

@@ -22,7 +22,7 @@ export default function PetunjukDPL() {
 
   return (
     <DashboardLayout title="Petunjuk & Panduan DPL">
-      <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      <div className="w-full space-y-6 pb-12">
         {/* Banner Penjelasan */}
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
@@ -32,7 +32,7 @@ export default function PetunjukDPL() {
             <h1 className="text-3xl font-black mb-4 flex items-center gap-3">
               <span>👨‍🏫</span> Selamat Datang, Dosen Pembimbing!
             </h1>
-            <div className="space-y-4 text-indigo-50 text-sm md:text-base leading-relaxed max-w-3xl font-medium">
+            <div className="space-y-4 text-indigo-50 text-sm md:text-base leading-relaxed font-medium">
               <p>
                 Sebagai <strong>Dosen Pembimbing Lapangan (DPL)</strong>, peran Anda sangat krusial dalam memastikan bahwa pengalaman magang mahasiswa sejalan dengan standar akademik program studi. Program <strong>Magang Berdampak</strong> dirancang secara terstruktur (OBE - <em>Outcome Based Education</em>) agar pengalaman praktik lapangan mahasiswa benar-benar bernilai dan dapat dikonversi menjadi SKS.
               </p>

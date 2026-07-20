@@ -35,19 +35,22 @@ export default function CetakSertifikatMitra() {
       </div>
 
       {/* Kontainer Kertas A4 Landscape: 29.7cm x 21cm */}
-      <div className="w-[29.7cm] h-[21cm] bg-white relative overflow-hidden shadow-2xl print:shadow-none border-[1rem] border-solid border-slate-800 flex flex-col justify-center text-center p-[2cm]">
+      <div className="w-[29.7cm] h-[21cm] bg-white relative overflow-hidden shadow-2xl print:shadow-none flex flex-col justify-center text-center p-[2cm]">
         
         {/* Latar Belakang Elegan */}
-        <div className="absolute inset-0 bg-slate-50 opacity-50 pointer-events-none"></div>
-        <div className="absolute -top-[10cm] -right-[10cm] w-[20cm] h-[20cm] bg-amber-50 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-[10cm] -left-[10cm] w-[20cm] h-[20cm] bg-slate-100 rounded-full blur-3xl pointer-events-none"></div>
+        <img src="/bg_serti.png" alt="Background" className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0" />
 
         <div className="relative z-10 flex flex-col h-full justify-between items-center">
           
-          <div className="w-full flex justify-center items-start mb-4">
-            <div className="text-center">
-              <h2 className="text-2xl font-black text-slate-800 uppercase tracking-widest">Sertifikat Penghargaan</h2>
-              <p className="text-sm font-bold text-amber-600 uppercase tracking-widest mt-1">Kemitraan STIMI YAPMI Makassar</p>
+          <div className="w-full flex justify-between items-start mb-4">
+            <div className="flex items-center gap-4">
+              <img src="/logo_stimi.png" alt="Logo STIMI" className="h-16 object-contain" />
+              <img src="/logo_berdampak.png" alt="Logo Berdampak" className="h-16 object-contain" />
+              <img src="/mm.png" alt="Logo Mantau Magang" className="h-12 object-contain" />
+            </div>
+            <div className="text-right flex flex-col justify-center">
+              <h2 className="text-3xl font-black text-slate-900 uppercase tracking-widest leading-none" style={{ fontFamily: 'Georgia, serif' }}>Sertifikat Penghargaan</h2>
+              <p className="text-base font-black text-amber-700 uppercase tracking-widest leading-none mt-1">Kemitraan STIMI YAPMI Makassar</p>
             </div>
           </div>
 
@@ -65,10 +68,14 @@ export default function CetakSertifikatMitra() {
           </div>
 
           <div className="w-full flex justify-center items-end">
-            <div className="text-center w-64">
-              <p className="text-sm text-slate-600 mb-16">Makassar, {new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</p>
+            <div className="text-center w-80">
+              <p className="text-sm text-slate-600 mb-16">
+                Makassar, {new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}<br/>
+                Ketua Sekolah Tinggi Ilmu Manajemen<br/>
+                Indonesia YAPMI Makassar,
+              </p>
               <div className="border-b border-slate-800 w-full mb-2"></div>
-              <p className="font-bold text-slate-800 uppercase">Ketua STIMI YAPMI</p>
+              <p className="font-bold text-slate-800">Dr. Ibrahim Syah, S.E.,M.M</p>
             </div>
           </div>
 

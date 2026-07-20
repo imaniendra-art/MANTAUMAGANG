@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import jsPDF from 'jspdf';
+import domtoimage from 'dom-to-image-more';
 
 export default function CetakSertifikatMahasiswa() {
   const { data: session } = useSession();
   const [data, setData] = useState(null);
+  const [host, setHost] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
+    setHost(window.location.origin);
     if (session?.user?.id) {
       fetch(`/api/laporan-akhir?mhsId=${session.user.id}`)
         .then(res => res.json())
@@ -26,34 +31,139 @@ export default function CetakSertifikatMahasiswa() {
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
 
   // URL validasi untuk QR Code
-  const verifyUrl = `http://localhost:3020/verify/${laporan._id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
+  const identifier = laporan.nomor_sertifikat ? encodeURIComponent(laporan.nomor_sertifikat) : laporan._id;
+  const verifyUrl = host ? `${host}/verify/${identifier}` : '';
+  const qrCodeUrl = verifyUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}` : '';
+
+  // Evaluasi calculations
+  const transkrip = pengajuan.transkrip_final || [];
+  const validTranskrip = transkrip.filter(mk => typeof mk.nilai_angka === 'number').map(mk => ({
+    nama: mk.nama_mk,
+    sks: mk.sks,
+    nilai: mk.nilai_angka
+  }));
+
+  const mentorPenilaian = pengajuan.penilaian_mentor || {};
+  const dplPenilaian = pengajuan.penilaian_dpl || {};
+  
+  const additionalIndicators = [
+    { nama: "Sikap & Kedisiplinan", nilai: mentorPenilaian.kedisiplinan },
+    { nama: "Tanggung Jawab & Kinerja", nilai: mentorPenilaian.tanggung_jawab },
+    { nama: "Komunikasi & Kerja Sama Tim", nilai: mentorPenilaian.komunikasi_tim },
+    { nama: "Sistematika Penulisan Laporan", nilai: dplPenilaian.sistematika_laporan },
+    { nama: "Kualitas Isi Laporan", nilai: dplPenilaian.kualitas_isi },
+    { nama: "Penguasaan Materi (Presentasi)", nilai: dplPenilaian.penguasaan_materi }
+  ].filter(i => i.nilai !== undefined && i.nilai !== null).map(i => ({
+    ...i,
+    sks: '-'
+  }));
+
+  const allScores = [...validTranskrip, ...additionalIndicators];
+  const totalNilai = allScores.reduce((sum, item) => sum + item.nilai, 0);
+  const average = allScores.length > 0 ? totalNilai / allScores.length : 0;
+  
+  let predikat = "BAIK";
+  if (average >= 85) predikat = "SANGAT BAIK";
+  else if (average >= 70) predikat = "BAIK";
+  else if (average >= 50) predikat = "CUKUP";
+  else predikat = "KURANG";
+
+  function getHuruf(finalScore) {
+    if (finalScore >= 85) return 'A';
+    if (finalScore >= 80) return 'A-';
+    if (finalScore >= 75) return 'B+';
+    if (finalScore >= 70) return 'B';
+    if (finalScore >= 65) return 'B-';
+    if (finalScore >= 60) return 'C+';
+    if (finalScore >= 50) return 'C';
+    return 'E';
+  }
+
+  const dplQrCodeUrl = verifyUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl + "?validator=dpl")}` : '';
+  const mentorQrCodeUrl = verifyUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl + "?validator=mentor")}` : '';
+  
+  const handleDownloadPDF = async () => {
+    setIsGenerating(true);
+    try {
+      const page1 = document.getElementById('page-1');
+      const page2 = document.getElementById('page-2');
+
+      const scale = 2;
+      const getOpts = (el) => ({
+        quality: 1,
+        bgcolor: '#ffffff',
+        width: el.clientWidth * scale,
+        height: el.clientHeight * scale,
+        style: {
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          width: `${el.clientWidth}px`,
+          height: `${el.clientHeight}px`,
+        }
+      });
+
+      const dataUrl1 = await domtoimage.toJpeg(page1, getOpts(page1));
+      
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      pdf.addImage(dataUrl1, 'JPEG', 0, 0, 297, 210);
+
+      if (page2) {
+        const dataUrl2 = await domtoimage.toJpeg(page2, getOpts(page2));
+        pdf.addPage();
+        pdf.addImage(dataUrl2, 'JPEG', 0, 0, 297, 210);
+      }
+
+      pdf.save(`Sertifikat_Magang_${mhs.nama_lengkap.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error("Gagal membuat PDF:", error);
+      alert("Gagal mengunduh PDF. Silakan coba lagi.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
-    <div className="bg-slate-200 min-h-screen font-sans text-slate-800 flex items-center justify-center p-8 print:p-0 print:bg-white">
-      
+    <div className="bg-slate-200 min-h-screen font-sans text-slate-800 flex flex-col items-center justify-center p-8 gap-8 print:p-0 print:gap-0 print:block print:bg-white">
       <div className="fixed top-5 right-5 print:hidden z-50">
-        <button onClick={() => window.print()} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-lg shadow-lg hover:bg-emerald-700">
-          🖨️ Cetak Sertifikat (Landscape)
+        <button onClick={handleDownloadPDF} disabled={isGenerating} className={`px-6 py-3 text-white font-bold rounded-lg shadow-lg flex items-center gap-2 transition-all ${isGenerating ? 'bg-slate-500 cursor-wait' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+          {isGenerating ? (
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          )}
+          {isGenerating ? 'Memproses PDF...' : 'Simpan sebagai PDF'}
         </button>
-        <p className="text-xs text-center mt-2 text-slate-500">Pastikan Layout = Landscape di pengaturan print</p>
+        <p className="text-xs text-center mt-2 text-slate-500 font-medium">Download file PDF resolusi tinggi</p>
       </div>
 
-      {/* Kontainer Kertas A4 Landscape: 29.7cm x 21cm */}
-      <div className="w-[29.7cm] h-[21cm] bg-white relative overflow-hidden shadow-2xl print:shadow-none border-[1rem] border-double border-slate-100 flex flex-col justify-center text-center p-[2cm]">
+      <div id="sertifikat-content" className="flex flex-col gap-8 items-center">
+        {/* Kontainer Kertas A4 Landscape: 297mm x 210mm */}
+        <div id="page-1" className="w-[297mm] h-[210mm] bg-white relative overflow-hidden shadow-2xl print:shadow-none flex flex-col justify-center text-center p-[20mm]">
         
         {/* Latar Belakang Elegan */}
-        <div className="absolute inset-0 bg-slate-50 opacity-50 pointer-events-none"></div>
-        <div className="absolute -top-[10cm] -right-[10cm] w-[20cm] h-[20cm] bg-blue-50 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-[10cm] -left-[10cm] w-[20cm] h-[20cm] bg-emerald-50 rounded-full blur-3xl pointer-events-none"></div>
+        <img src="/bg_serti.png" alt="Background" className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0" />
 
         <div className="relative z-10 flex flex-col h-full justify-between items-center">
           
           <div className="w-full flex justify-between items-start">
-            <img src="/mm.png" alt="Logo" className="h-16" />
-            <div className="text-right">
-              <h2 className="text-2xl font-black text-slate-800 uppercase tracking-widest">Sertifikat</h2>
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">Penyelesaian Magang Berdampak</p>
+            <div className="flex items-center gap-4">
+              <img src="/logo_stimi.png" alt="Logo STIMI" className="h-16 object-contain" />
+              <img src="/logo_berdampak.png" alt="Logo Berdampak" className="h-16 object-contain" />
+              <img src="/mm.png" alt="Logo Mantau Magang" className="h-12 object-contain" />
+            </div>
+            <div className="text-right flex flex-col justify-center">
+              <h2 className="text-4xl font-black text-slate-900 uppercase tracking-widest leading-none" style={{ fontFamily: 'Georgia, serif' }}>Sertifikat</h2>
+              <p className="text-base font-black text-emerald-700 uppercase tracking-widest leading-none mt-1">Penyelesaian Magang Berdampak</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-none mt-1">Sekolah Tinggi Ilmu Manajemen Indonesia YAPMI</p>
             </div>
           </div>
 
@@ -65,32 +175,155 @@ export default function CetakSertifikatMahasiswa() {
             <p className="text-xl text-slate-600 font-bold mb-8">NIM: {mhs.nim_nidn}</p>
 
             <p className="text-lg text-slate-600 max-w-3xl leading-relaxed">
-              Telah menyelesaikan program Magang Berdampak dengan predikat <span className="font-bold text-emerald-600">SANGAT BAIK</span> 
-              di <span className="font-bold text-slate-800">{mitra}</span>. Sertifikat ini diberikan sebagai bentuk apresiasi atas 
-              dedikasi, kontribusi, dan pencapaian kompetensi profesional selama masa magang.
+              Telah berpartisipasi dan menyelesaikan program Magang Berdampak STIMI YAPMI dengan predikat <span className="font-bold text-emerald-600">{predikat}</span> di <span className="font-bold text-slate-800">{mitra}</span>. Sertifikat ini dianugerahkan sebagai bentuk apresiasi atas dedikasi, kontribusi aktif, serta pencapaian kompetensi profesional yang diraih selama masa magang.
             </p>
           </div>
 
           <div className="w-full flex justify-between items-end">
             <div className="flex gap-4 items-end">
-              <img src={qrCodeUrl} alt="QR Code SKPI" className="w-24 h-24 border border-slate-200 p-1 bg-white" />
+              {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code SKPI" className="w-24 h-24 border border-slate-200 p-1 bg-white" />}
               <div className="text-left text-xs text-slate-500 mb-1">
+                <p className="font-bold text-slate-800 text-sm mb-1">{laporan.nomor_sertifikat ? `No. ${laporan.nomor_sertifikat}` : ''}</p>
                 <p className="font-bold">Verifikasi Digital (SKPI)</p>
                 <p>Scan kode QR untuk memvalidasi</p>
                 <p>keaslian dokumen ini di sistem</p>
-                <p>STIMI YAPMI Makassar.</p>
+                <p>MANTAU MAGANG STIMI YAPMI Makassar.</p>
               </div>
             </div>
 
-            <div className="text-center w-64">
-              <p className="text-sm text-slate-600 mb-16">Pimpinan / Mentor Industri</p>
-              <div className="border-b border-slate-400 w-full mb-2"></div>
-              <p className="font-bold text-slate-800">{mitra}</p>
+            <div className="text-center w-80">
+              <p className="text-sm text-slate-600 mb-16">
+                Makassar, {new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}<br/>
+                Ketua Sekolah Tinggi Ilmu Manajemen<br/>
+                Indonesia YAPMI Makassar,
+              </p>
+              <p className="font-bold text-slate-800 mt-2">Dr. Ibrahim Syah, S.E.,M.M</p>
             </div>
           </div>
 
         </div>
+      </div>
 
+      {/* HALAMAN 2: TRANSKRIP / NILAI */}
+      <div id="page-2" className="page-break w-[297mm] h-[210mm] bg-white relative overflow-hidden shadow-2xl print:shadow-none flex flex-col p-[20mm] mt-8 print:mt-0">
+        <img src="/bg_serti.png" alt="Background" className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0" />
+        <div className="relative z-10 flex flex-col h-full items-center">
+          
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-widest mb-4 mt-2" style={{ fontFamily: 'Georgia, serif' }}>Daftar Penilaian Magang</h2>
+
+          <div className="w-full max-w-5xl flex justify-between text-sm font-bold text-slate-700 mb-4 px-4 bg-white/50 py-2 rounded-lg border border-slate-200 shadow-sm">
+            <p>NAMA: {mhs.nama_lengkap}</p>
+            <p>NIM: {mhs.nim_nidn}</p>
+            <p>LOKASI: {mitra}</p>
+          </div>
+
+          <div className="w-full max-w-5xl bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-sm flex-1 mb-4 flex flex-col gap-4">
+            
+            <div className="flex flex-row gap-6 w-full h-full">
+              {/* Tabel Mata Kuliah */}
+              <div className="w-1/2 flex flex-col">
+                <h3 className="font-bold text-slate-800 mb-2 text-sm">A. Nilai Mata Kuliah</h3>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-slate-800 text-slate-800">
+                      <th className="py-1.5 px-2 font-bold text-[11px] w-8">No</th>
+                      <th className="py-1.5 px-2 font-bold text-[11px]">Mata Kuliah</th>
+                      <th className="py-1.5 px-2 font-bold text-center text-[11px] w-10">SKS</th>
+                      <th className="py-1.5 px-2 font-bold text-center text-[11px] w-16">Nilai Angka</th>
+                      <th className="py-1.5 px-2 font-bold text-center text-[11px] w-16">Nilai Huruf</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validTranskrip.length > 0 ? validTranskrip.map((mk, index) => (
+                      <tr key={index} className="border-b border-slate-300/60 text-slate-700">
+                        <td className="py-1.5 px-2 text-[11px]">{index + 1}</td>
+                        <td className="py-1.5 px-2 font-medium text-[11px] leading-tight">{mk.nama}</td>
+                        <td className="py-1.5 px-2 text-center text-[11px]">{mk.sks}</td>
+                        <td className="py-1.5 px-2 text-center text-[11px]">{Math.round(mk.nilai)}</td>
+                        <td className="py-1.5 px-2 text-center font-bold text-[11px]">{getHuruf(mk.nilai)}</td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={5} className="py-4 text-center text-[11px] text-slate-500 italic">Belum ada data nilai mata kuliah.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tabel Indikator Kinerja */}
+              <div className="w-1/2 flex flex-col">
+                <h3 className="font-bold text-slate-800 mb-2 text-sm">B. Indikator Kinerja</h3>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-slate-800 text-slate-800">
+                      <th className="py-1.5 px-2 font-bold text-[11px] w-8">No</th>
+                      <th className="py-1.5 px-2 font-bold text-[11px]">Komponen Penilaian</th>
+                      <th className="py-1.5 px-2 font-bold text-center text-[11px] w-16">Nilai Angka</th>
+                      <th className="py-1.5 px-2 font-bold text-center text-[11px] w-16">Nilai Huruf</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {additionalIndicators.length > 0 ? additionalIndicators.map((item, index) => (
+                      <tr key={index} className="border-b border-slate-300/60 text-slate-700">
+                        <td className="py-1.5 px-2 text-[11px]">{index + 1}</td>
+                        <td className="py-1.5 px-2 font-medium text-[11px] leading-tight">{item.nama}</td>
+                        <td className="py-1.5 px-2 text-center text-[11px]">{Math.round(item.nilai)}</td>
+                        <td className="py-1.5 px-2 text-center font-bold text-[11px]">{getHuruf(item.nilai)}</td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={4} className="py-4 text-center text-[11px] text-slate-500 italic">Belum ada data nilai indikator.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* Rata-Rata Keseluruhan */}
+            <div className="mt-auto pt-4 border-t-2 border-slate-800">
+              <table className="w-full text-left mb-2">
+                <tbody>
+                  <tr className="font-bold text-slate-800 bg-slate-100/50">
+                    <td className="py-2 px-3 text-right text-sm">RATA-RATA KESELURUHAN :</td>
+                    <td className="py-2 px-3 text-center text-sm w-24">{Math.round(average)}</td>
+                    <td className="py-2 px-3 text-center text-emerald-600 text-sm w-24">{predikat}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-500 pt-1 border-t border-slate-200">
+                <span className="font-bold text-slate-700">Skala Nilai:</span>
+                <span>A: 85-100 (Sangat Baik)</span>
+                <span>A-: 80-84</span>
+                <span>B+: 75-79</span>
+                <span>B: 70-74 (Baik)</span>
+                <span>B-: 65-69</span>
+                <span>C+: 60-64</span>
+                <span>C: 50-59 (Cukup)</span>
+                <span>E: &lt;50 (Kurang)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="w-full flex justify-between items-end mt-auto px-10 pb-4">
+            {/* Tanda Tangan DPL */}
+            <div className="text-center w-56 flex flex-col items-center">
+              <p className="text-xs text-slate-600 mb-2">Dosen Pembimbing Lapangan</p>
+              {dplQrCodeUrl && <img src={dplQrCodeUrl} alt="QR DPL" className="w-16 h-16 mb-2 mix-blend-multiply" />}
+              <p className="font-bold text-slate-800 text-xs truncate w-full mt-1">{pengajuan.dpl_id?.nama_lengkap || 'Dosen Pembimbing'}</p>
+            </div>
+
+            {/* Tanda Tangan Mentor */}
+            <div className="text-center w-56 flex flex-col items-center">
+              <p className="text-xs text-slate-600 mb-2">Mentor Industri</p>
+              {mentorQrCodeUrl && <img src={mentorQrCodeUrl} alt="QR Mentor" className="w-16 h-16 mb-2 mix-blend-multiply" />}
+              <p className="font-bold text-slate-800 text-xs truncate w-full mt-1">{pengajuan.mentor_id?.nama_lengkap || 'Mentor Industri'}</p>
+            </div>
+          </div>
+          </div>
+        </div>
       </div>
     </div>
   );

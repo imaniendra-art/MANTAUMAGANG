@@ -135,7 +135,7 @@ export default function ProfilPage() {
                 </p>
                 <p className="text-lg font-bold text-slate-900 dark:text-white">{session?.user?.nim_nidn}</p>
               </div>
-              {session?.user?.nidn && role !== 'mahasiswa' && (
+              {session?.user?.nidn && role !== 'mahasiswa' && role !== 'mentor' && (
                 <div>
                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">NIDN</p>
                   <p className="text-lg font-bold text-slate-900 dark:text-white">{session?.user?.nidn}</p>
@@ -154,7 +154,7 @@ export default function ProfilPage() {
             )}
             
             <form onSubmit={handleProfilSubmit} className="space-y-5 mb-8">
-              {role !== 'mahasiswa' && (
+              {role !== 'mahasiswa' && role !== 'mentor' && (
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">NIDN / NIP</label>
                   <input 

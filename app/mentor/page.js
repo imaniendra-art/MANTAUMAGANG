@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 export default function MentorDashboard() {
   const { data: session } = useSession();
@@ -10,14 +11,16 @@ export default function MentorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/logbook?role=mentor')
-      .then(r => r.json())
-      .then(data => {
-        setStats({ pendingLogbooks: Array.isArray(data) ? data.length : 0 });
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (session?.user?.id) {
+      fetch(`/api/logbook?role=mentor&userId=${session.user.id}`)
+        .then(r => r.json())
+        .then(data => {
+          setStats({ pendingLogbooks: Array.isArray(data) ? data.length : 0 });
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [session]);
 
   const notificationCards = loading ? (
     <div className="h-32 bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm dark:shadow-none rounded-2xl animate-pulse border border-slate-300 dark:border-slate-600" />
@@ -29,11 +32,16 @@ export default function MentorDashboard() {
           <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
             ⚠️
           </div>
-          <div>
+          <div className="flex-1">
             <h4 className="font-bold text-slate-800 dark:text-slate-100">Keamanan Akun</h4>
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-              Anda masih menggunakan password default. Demi keamanan, silakan segera ubah password Anda dengan mengklik menu pengguna di pojok kanan atas lalu pilih <strong>Pengaturan Profil</strong>.
+              Anda masih menggunakan password default. Demi keamanan, silakan segera ubah password Anda.
             </p>
+            <div className="mt-3">
+              <Link href="/profil" className="inline-block px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg shadow-sm transition-colors">
+                Perbarui Profil
+              </Link>
+            </div>
           </div>
         </div>
       )}

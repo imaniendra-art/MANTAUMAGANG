@@ -27,6 +27,8 @@ export async function POST(req) {
       const buffer = Buffer.from(bytes);
 
       // Pastikan direktori public/uploads/cv/ ada secara fisik
+      const fs = await import('fs');
+      const path = await import('path');
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'cv');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });

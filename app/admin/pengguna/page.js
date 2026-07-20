@@ -306,6 +306,7 @@ export default function ManajemenPenggunaPage() {
   };
 
   const tabs = [
+    { id: "admin_prodi", label: "Data Admin" },
     { id: "mahasiswa", label: "Data Mahasiswa" },
     { id: "dpl", label: "Data DPL" },
     { id: "mentor", label: "Data Mentor" },
@@ -414,7 +415,7 @@ export default function ManajemenPenggunaPage() {
                         >
                           {activeTab === 'mahasiswa' ? 'NIM' : 'ID'} {getSortIcon('nim_nidn')}
                         </th>
-                        {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && (
+                        {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && activeTab !== 'admin_prodi' && (
                           <th 
                             scope="col" 
                             onClick={() => requestSort('nidn')}
@@ -432,10 +433,10 @@ export default function ManajemenPenggunaPage() {
                         </th>
                         <th 
                           scope="col" 
-                          onClick={() => requestSort(activeTab === 'mentor' ? 'lokasi' : 'program_studi')}
+                          onClick={() => requestSort(activeTab === 'mentor' ? 'lokasi' : (activeTab === 'admin_prodi' ? 'email' : 'program_studi'))}
                           className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         >
-                          {activeTab === 'mentor' ? 'Instansi / Lokasi' : 'Prodi'} {getSortIcon(activeTab === 'mentor' ? 'lokasi' : 'program_studi')}
+                          {activeTab === 'mentor' ? 'Instansi / Lokasi' : (activeTab === 'admin_prodi' ? 'Email' : 'Prodi')} {getSortIcon(activeTab === 'mentor' ? 'lokasi' : (activeTab === 'admin_prodi' ? 'email' : 'program_studi'))}
                         </th>
                         {activeTab === 'mahasiswa' && (
                           <th 
@@ -446,13 +447,15 @@ export default function ManajemenPenggunaPage() {
                             Konsentrasi {getSortIcon('konsentrasi')}
                           </th>
                         )}
-                        <th 
-                          scope="col" 
-                          onClick={() => requestSort(activeTab === 'mentor' ? 'devisi' : 'kegiatan')}
-                          className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                          {activeTab === 'mentor' ? 'Posisi / Devisi' : 'Kegiatan'} {getSortIcon(activeTab === 'mentor' ? 'devisi' : 'kegiatan')}
-                        </th>
+                        {activeTab !== 'admin_prodi' && (
+                          <th 
+                            scope="col" 
+                            onClick={() => requestSort(activeTab === 'mentor' ? 'devisi' : 'kegiatan')}
+                            className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            {activeTab === 'mentor' ? 'Posisi / Devisi' : 'Kegiatan'} {getSortIcon(activeTab === 'mentor' ? 'devisi' : 'kegiatan')}
+                          </th>
+                        )}
                         <th 
                           scope="col" 
                           onClick={() => requestSort('nomor_hp')}
@@ -475,17 +478,21 @@ export default function ManajemenPenggunaPage() {
                         <tr key={user._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500">{startIndex + idx + 1}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.nim_nidn}</td>
-                          {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && (
+                          {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && activeTab !== 'admin_prodi' && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.nidn || '-'}</td>
                           )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-white">{user.nama_lengkap}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{activeTab === 'mentor' ? (user.lokasi || '-') : (user.program_studi || '-')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                            {activeTab === 'mentor' ? (user.lokasi || '-') : (activeTab === 'admin_prodi' ? (user.email || '-') : (user.program_studi || '-'))}
+                          </td>
                           {activeTab === 'mahasiswa' && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.konsentrasi || '-'}</td>
                           )}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                            {activeTab === 'mentor' ? (user.devisi || '-') : (user.kegiatan || '-')}
-                          </td>
+                          {activeTab !== 'admin_prodi' && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                              {activeTab === 'mentor' ? (user.devisi || '-') : (user.kegiatan || '-')}
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                             {user.nomor_hp || '-'}
                           </td>
@@ -666,7 +673,7 @@ export default function ManajemenPenggunaPage() {
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg overflow-hidden relative scale-in-95 duration-200">
             <div className="p-8 border-b border-slate-200 dark:border-slate-700">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Tambah {activeTab === 'dpl' ? 'DPL' : 'Mentor'}
+                Tambah {activeTab === 'dpl' ? 'DPL' : (activeTab === 'mentor' ? 'Mentor' : 'Admin')}
               </h2>
             </div>
             
@@ -684,7 +691,7 @@ export default function ManajemenPenggunaPage() {
                   placeholder="Contoh: riswan"
                 />
               </div>
-              {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && (
+              {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && activeTab !== 'admin_prodi' && (
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                     NIDN
@@ -780,7 +787,7 @@ export default function ManajemenPenggunaPage() {
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              {activeTab !== 'mahasiswa' && (
+              {activeTab !== 'mahasiswa' && activeTab !== 'admin_prodi' && activeTab !== 'mentor' && (
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                     NIDN

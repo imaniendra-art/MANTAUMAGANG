@@ -56,9 +56,25 @@ const PengajuanMagangSchema = new mongoose.Schema({
   },
   tanggal_mulai: { type: Date, required: true },
   tanggal_selesai: { type: Date, required: true },
-  nilai_rekomendasi_sistem: { type: Number },
-  nilai_akhir_mutlak: { type: Number },
-  catatan_evaluasi: { type: String },
+  penilaian_mentor: {
+    kedisiplinan: { type: Number, min: 0, max: 100 },
+    tanggung_jawab: { type: Number, min: 0, max: 100 },
+    komunikasi_tim: { type: Number, min: 0, max: 100 },
+    catatan: { type: String }
+  },
+  penilaian_dpl: {
+    sistematika_laporan: { type: Number, min: 0, max: 100 },
+    kualitas_isi: { type: Number, min: 0, max: 100 },
+    penguasaan_materi: { type: Number, min: 0, max: 100 },
+    catatan: { type: String }
+  },
+  transkrip_final: [{
+    kode_mk: { type: String },
+    nama_mk: { type: String },
+    sks: { type: Number },
+    nilai_angka: { type: Number },
+    nilai_huruf: { type: String }
+  }],
   alasan_penolakan: { type: String },
   nomor_surat_pengantar: { type: String },
   is_laporan_unlocked: {
