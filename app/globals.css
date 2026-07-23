@@ -20,24 +20,15 @@ body {
   --foreground: #f8fafc;
 }
 
-/* ═══════════════════════ CUSTOM SCROLLBAR (Dark Theme) ═══════════════════════ */
+/* ═══════════════════════ Sembunyikan Scrollbar (Sleek Look) ═══════════════════════ */
+
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.15);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.25);
+  display: none; /* Safari and Chrome */
 }
 
 /* ═══════════════════════ ANIMATIONS ═══════════════════════ */
