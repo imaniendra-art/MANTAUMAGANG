@@ -128,7 +128,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card 4: Antrean Validasi */}
-          <div className={`p-5 rounded-2xl border flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md ${stats.antreanValidasi > 0 ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50' : 'bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none'}`}>
+          <Link href="/admin/validasi" className={`p-5 rounded-2xl border flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md cursor-pointer hover:scale-[1.02] ${stats.antreanValidasi > 0 ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50' : 'bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none'}`}>
             <div className={`absolute -bottom-10 -right-10 w-28 h-28 blur-[30px] rounded-full pointer-events-none ${stats.antreanValidasi > 0 ? 'bg-amber-500/20' : 'bg-slate-500/10 dark:bg-slate-500/20'}`} />
             <div className="relative z-10">
               <p className={`text-sm font-semibold ${stats.antreanValidasi > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}>Antrean Validasi</p>
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
                 </span>
               )}
             </div>
-          </div>
+          </Link>
 
           {/* Card 5: Live Feed (Replaces Sebaran Konsentrasi) */}
           <div className="bg-[#0F172A]/15 dark:bg-slate-800/40 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-center relative overflow-hidden transition-all hover:shadow-md xl:col-span-2">

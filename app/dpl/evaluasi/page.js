@@ -36,7 +36,7 @@ export default function DplEvaluasi() {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  const handleSaveEvaluasi = async (id, sistematika, kualitas, penguasaan, catatan) => {
+  const handleSaveEvaluasi = async (id, sistematika, kualitas, penguasaan, catatan, approvedSkills) => {
     if (sistematika < 0 || sistematika > 100 || kualitas < 0 || kualitas > 100 || penguasaan < 0 || penguasaan > 100) {
       alert("Semua nilai harus antara 0 - 100");
       return;
@@ -51,7 +51,8 @@ export default function DplEvaluasi() {
           sistematika_laporan: sistematika,
           kualitas_isi: kualitas,
           penguasaan_materi: penguasaan,
-          catatan
+          catatan,
+          approved_skills: approvedSkills
         })
       });
       if (res.ok) {
@@ -125,6 +126,8 @@ function StudentAccordionCard({ mhs, onSave, showToast }) {
   const [kualitas, setKualitas] = useState(dplVal.kualitas_isi || "");
   const [penguasaan, setPenguasaan] = useState(dplVal.penguasaan_materi || "");
   const [catatan, setCatatan] = useState(dplVal.catatan || "");
+  
+  const [approvedSkills, setApprovedSkills] = useState(dplVal.approved_skills?.join(", ") || (mhs.suggested_skills ? mhs.suggested_skills.join(", ") : ""));
   
   const isLocked = dplVal.sistematika_laporan !== undefined && dplVal.sistematika_laporan !== null;
   const isMentorRated = mhs.penilaian_mentor && mhs.penilaian_mentor.kedisiplinan != null;
@@ -306,6 +309,20 @@ function StudentAccordionCard({ mhs, onSave, showToast }) {
                   <input type="number" value={penguasaan} onChange={e => setPenguasaan(e.target.value)} disabled={isLocked} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-sm text-slate-800 dark:text-slate-100 disabled:opacity-60 focus:ring-2 focus:ring-rose-500" placeholder="0-100" min="0" max="100"/>
                 </div>
                 <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <span>🧠</span> Keterampilan yang Diperoleh (Hard Skill / Soft Skill)
+                  </label>
+                  <p className="text-[9px] text-slate-400 mb-1">Rekomendasi AI berdasarkan logbook. Pisahkan dengan koma (,).</p>
+                  <textarea 
+                    value={approvedSkills} 
+                    onChange={(e) => setApprovedSkills(e.target.value)} 
+                    disabled={isLocked}
+                    rows="2" 
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-emerald-50/50 dark:bg-emerald-900/10 text-xs font-medium text-emerald-800 dark:text-emerald-100 disabled:opacity-60 focus:ring-2 focus:ring-emerald-500 resize-none" 
+                    placeholder={isLocked ? "-" : "Contoh: Problem Solving, React.js, Public Speaking"}
+                  ></textarea>
+                </div>
+                <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Catatan Akademik</label>
                   <textarea 
                     value={catatan} 
@@ -325,7 +342,7 @@ function StudentAccordionCard({ mhs, onSave, showToast }) {
                     </div>
                   ) : (
                     <button 
-                      onClick={() => onSave(mhs._id, parseInt(sistematika), parseInt(kualitas), parseInt(penguasaan), catatan)}
+                      onClick={() => onSave(mhs._id, parseInt(sistematika), parseInt(kualitas), parseInt(penguasaan), catatan, approvedSkills.split(',').map(s => s.trim()).filter(Boolean))}
                       disabled={!isMentorRated}
                       className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold text-xs rounded-lg shadow-md shadow-rose-500/20 transition-all ${!isMentorRated ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:from-pink-600 hover:to-rose-700 transform hover:-translate-y-0.5'}`}
                     >

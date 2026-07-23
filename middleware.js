@@ -11,7 +11,7 @@ export default withAuth(
     }
 
     if (path.startsWith('/mahasiswa') && token.role !== 'mahasiswa') {
-      if (token.role === 'dpl' && path.startsWith('/mahasiswa/laporan/cetak/laporan')) {
+      if (token.role === 'dpl' && (path.startsWith('/mahasiswa/laporan/cetak/laporan') || path.startsWith('/mahasiswa/laporan/templates/pengantar'))) {
         // allow DPL to view
       } else if (token.role === 'admin_prodi' && path.startsWith('/mahasiswa/laporan/templates/pengantar')) {
         // allow Admin to view

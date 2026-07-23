@@ -14,7 +14,7 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "Tidak sah, silakan login" }, { status: 401 });
     }
 
-    const { oldPassword, newPassword, nidn, nomor_hp, email } = await req.json();
+    const { oldPassword, newPassword, nidn, nomor_hp, email, nama_lengkap, nim_nidn } = await req.json();
 
     const user = await User.findById(session.user.id);
     if (!user) {
@@ -38,6 +38,14 @@ export async function PATCH(req) {
     }
 
     // Perbarui info profil jika diberikan
+        if (nama_lengkap) user.nama_lengkap = nama_lengkap;
+    if (nim_nidn) {
+      const existingUser = await User.findOne({ nim_nidn });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return NextResponse.json({ error: "Username/ID sudah digunakan oleh pengguna lain" }, { status: 400 });
+      }
+      user.nim_nidn = nim_nidn;
+    }
     if (nidn !== undefined) user.nidn = nidn;
     if (nomor_hp !== undefined) user.nomor_hp = nomor_hp;
     if (email !== undefined && email !== user.email) {

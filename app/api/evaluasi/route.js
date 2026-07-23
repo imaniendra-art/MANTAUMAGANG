@@ -24,15 +24,28 @@ export async function GET(req) {
       const logs = await Logbook.find({ 
         pengajuan_id: p._id, 
         status_validasi: 'divalidasi_dpl' 
-      }).select('nilai_otomatis matched_indicators');
+      }).select('nilai_otomatis matched_indicators extracted_skills');
       
       let total = 0;
       let count = logs.length;
       const allMatched = [];
+      const skillCounts = {};
+      
       logs.forEach(l => {
         total += l.nilai_otomatis || 0;
         if (l.matched_indicators) allMatched.push(...l.matched_indicators);
+        if (l.extracted_skills) {
+          l.extracted_skills.forEach(skill => {
+            skillCounts[skill] = (skillCounts[skill] || 0) + 1;
+          });
+        }
       });
+      
+      // Get top 5 skills based on frequency
+      const suggested_skills = Object.entries(skillCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(entry => entry[0]);
       
       const computedScore = count > 0 ? Math.round(total / count) : 0;
 
@@ -59,7 +72,8 @@ export async function GET(req) {
         ...p,
         computed_rekomendasi: computedScore,
         logbook_count: count,
-        preview_matkul
+        preview_matkul,
+        suggested_skills
       };
     }));
     
@@ -73,7 +87,7 @@ export async function PATCH(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    const { id, sistematika_laporan, kualitas_isi, penguasaan_materi, catatan } = data;
+    const { id, sistematika_laporan, kualitas_isi, penguasaan_materi, catatan, approved_skills } = data;
     
     if (!id || sistematika_laporan === undefined || kualitas_isi === undefined || penguasaan_materi === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -151,7 +165,8 @@ export async function PATCH(req) {
           sistematika_laporan,
           kualitas_isi,
           penguasaan_materi,
-          catatan
+          catatan,
+          approved_skills: approved_skills || []
         },
         transkrip_final: transkrip_final
       },

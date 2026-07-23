@@ -20,10 +20,15 @@ const LogbookSchema = new mongoose.Schema({
     required: true,
   },
   matched_indicators: [{
+    matkul_kode: String,
+    matkul_nama: String,
     cpmk_id: String,
     nama_cpmk: String,
     indikator: String,
     alasan: String
+  }],
+  extracted_skills: [{
+    type: String
   }],
   bukti_kegiatan: { // untuk foto (legacy)
     type: String,

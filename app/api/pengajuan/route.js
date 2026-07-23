@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import PengajuanMagang from '@/models/PengajuanMagang';
@@ -5,7 +7,7 @@ import User from '@/models/User';
 import PaketMatkul from '@/models/PaketMatkul';
 import fs from 'fs';
 import path from 'path';
-import { uploadToMinio } from '@/lib/minio';
+import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
 
 export async function POST(req) {
   await dbConnect();
@@ -77,12 +79,42 @@ export async function GET(req) {
     if (pengajuanId) {
       const pengajuan = await PengajuanMagang.findById(pengajuanId)
         .populate('paket_matkul_id')
-        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
-        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
+        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
         .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
         .populate('mitra_id')
         .populate('mahasiswa_id');
-      return NextResponse.json(pengajuan || null);
+        
+      if (!pengajuan) {
+        return NextResponse.json(null);
+      }
+      
+      // Cari peserta lain yang magang di tempat yang sama
+      let query = { 
+        status_pengajuan: 'disetujui'
+      };
+      
+      // Filter berdasarkan instansi/mitra yang sama
+      if (pengajuan.mitra_id) {
+        query.mitra_id = pengajuan.mitra_id._id;
+      } else if (pengajuan.detail_tempat && pengajuan.detail_tempat.nama) {
+        query['detail_tempat.nama'] = pengajuan.detail_tempat.nama;
+      }
+      
+      // Filter berdasarkan paket matkul yang sama (batch yang sama)
+      if (pengajuan.paket_matkul_id) {
+        query.paket_matkul_id = pengajuan.paket_matkul_id._id;
+      }
+
+      const peserta = await PengajuanMagang.find(query)
+        .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi konsentrasi' })
+        .populate({ path: 'dpl_id', select: 'nama_lengkap nidn nim_nidn' })
+        .sort({ createdAt: 1 });
+
+      const responseData = pengajuan.toObject();
+      responseData.peserta_grup = peserta;
+
+      return NextResponse.json(responseData);
     }
     
     // Tarik semua pengajuan berdasarkan status untuk Admin (default: menunggu)
@@ -91,8 +123,8 @@ export async function GET(req) {
       const pengajuans = await PengajuanMagang.find({ status_pengajuan: status })
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi konsentrasi nomor_hp' })
         .populate({ path: 'paket_matkul_id', select: 'nama_paket' })
-        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
-        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
+        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
         .populate({ 
           path: 'posisi_id', 
           select: 'konsentrasi nama_posisi mitra_id',
@@ -108,8 +140,8 @@ export async function GET(req) {
     if (mhsId) {
       const pengajuan = await PengajuanMagang.findOne({ mahasiswa_id: mhsId })
         .populate('paket_matkul_id')
-        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp' })
-        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp' })
+        .populate({ path: 'dpl_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
+        .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
         .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
         .populate('mitra_id')
         .sort({ createdAt: -1 });
@@ -139,6 +171,18 @@ export async function PATCH(req) {
     const updatePayload = { status_pengajuan };
     if (dpl_id) updatePayload.dpl_id = dpl_id;
     if (alasan_penolakan) updatePayload.alasan_penolakan = alasan_penolakan;
+
+    if (status_pengajuan === 'ditolak') {
+      try {
+        const existingPengajuan = await PengajuanMagang.findById(id);
+        if (existingPengajuan && existingPengajuan.file_cv_path) {
+          await deleteFromMinio(existingPengajuan.file_cv_path);
+          updatePayload.file_cv_path = ""; // Kosongkan path di database agar tidak jadi sampah
+        }
+      } catch (err) {
+        console.error("Error deleting CV on reject:", err);
+      }
+    }
 
     if (status_pengajuan === 'disetujui') {
       const currentYear = new Date().getFullYear();

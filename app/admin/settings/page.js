@@ -5,7 +5,6 @@ import DashboardLayout from '@/components/DashboardLayout';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  const [paketMatkul, setPaketMatkul] = useState([]);
   const [periodes, setPeriodes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,6 +16,17 @@ export default function SettingsPage() {
     batas_laporan: ''
   });
 
+  // App Config
+  const [config, setConfig] = useState({
+    nama_institusi: '',
+    nama_pejabat_pengesah: '',
+    nidn_pejabat: '',
+    jabatan_pejabat: '',
+    logo_url: null,
+  });
+  const [logoFile, setLogoFile] = useState(null);
+  const [savingConfig, setSavingConfig] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -24,13 +34,16 @@ export default function SettingsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resPaket, resPeriode] = await Promise.all([
-        fetch('/api/paket-matkul'),
-        fetch('/api/periode')
+      const [resPeriode, resConfig] = await Promise.all([
+        fetch('/api/periode'),
+        fetch('/api/config')
       ]);
       
-      if (resPaket.ok) setPaketMatkul(await resPaket.json());
       if (resPeriode.ok) setPeriodes(await resPeriode.json());
+      if (resConfig.ok) {
+        const configData = await resConfig.json();
+        setConfig(configData);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -106,6 +119,40 @@ export default function SettingsPage() {
   // Cari periode yang sedang aktif
   const activePeriode = periodes.find(p => p.is_active);
 
+  const handleSaveConfig = async (e) => {
+    e.preventDefault();
+    try {
+      setSavingConfig(true);
+      const formData = new FormData();
+      formData.append('nama_institusi', config.nama_institusi || '');
+      formData.append('nama_pejabat_pengesah', config.nama_pejabat_pengesah || '');
+      formData.append('nama_ketua_institusi', config.nama_ketua_institusi || '');
+      formData.append('nidn_pejabat', config.nidn_pejabat || '');
+      formData.append('jabatan_pejabat', config.jabatan_pejabat || '');
+      formData.append('current_logo', config.logo_url || '');
+      
+      if (logoFile) formData.append('logo_url', logoFile);
+
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        alert("Konfigurasi berhasil disimpan!");
+        const updatedConfig = await res.json();
+        setConfig(updatedConfig.data);
+        setLogoFile(null);
+      } else {
+        alert("Gagal menyimpan konfigurasi");
+      }
+    } catch (error) {
+      alert("Terjadi kesalahan sistem");
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
   return (
     <DashboardLayout title="Pengaturan Sistem">
       <div className="space-y-8">
@@ -115,7 +162,7 @@ export default function SettingsPage() {
           <div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Pengaturan Sistem</h2>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Kelola periode magang, konfigurasi pendaftaran, dan struktur paket mata kuliah MBKM.
+              Kelola periode magang dan konfigurasi pendaftaran.
             </p>
           </div>
           {activePeriode && (
@@ -132,11 +179,11 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Kolom Kiri: Manajemen Periode */}
-          <div className="xl:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+          {/* Manajemen Periode */}
+          <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
               <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   📅 Master Periode
@@ -227,62 +274,86 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-
-          {/* Kolom Kanan: Paket Mata Kuliah */}
-          <div className="xl:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+          
+          {/* Konfigurasi Institusi */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  📚 Paket Mata Kuliah MBKM
+                  🏛️ Identitas Institusi
                 </h3>
-                <button className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg transition-colors">
-                  + Tambah Paket
-                </button>
               </div>
-
-              {loading ? (
-                <div className="text-center py-10 text-slate-500 font-bold animate-pulse">Memuat data paket matkul...</div>
-              ) : paketMatkul.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 font-medium">Belum ada paket mata kuliah yang dikonfigurasi.</div>
-              ) : (
-                <div className="space-y-4">
-                  {paketMatkul.map(paket => (
-                    <div key={paket._id} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                        <div>
-                          <h4 className="font-bold text-slate-800 dark:text-slate-200">{paket.nama_paket}</h4>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Skema: {paket.jenis_skema}</span>
-                        </div>
-                        <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-3 py-1 rounded-full">
-                          {paket.mata_kuliah?.length || 0} Matkul
-                        </span>
-                      </div>
-                      <div className="p-4 bg-white dark:bg-slate-800">
-                        {paket.mata_kuliah && paket.mata_kuliah.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {paket.mata_kuliah.map(mk => (
-                              <div key={mk._id} className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50 flex justify-between items-center">
-                                <div>
-                                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{mk.nama}</p>
-                                  <p className="text-[10px] font-medium text-slate-500">{mk.kode}</p>
-                                </div>
-                                <span className="font-black text-slate-700 dark:text-slate-400">{mk.sks} SKS</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-500 italic">Belum ada mata kuliah dalam paket ini.</p>
-                        )}
+              
+              <div className="p-5">
+                {loading ? (
+                  <p className="text-center text-sm text-slate-500 animate-pulse">Memuat konfigurasi...</p>
+                ) : (
+                  <form onSubmit={handleSaveConfig} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Institusi</label>
+                      <input 
+                        type="text" required 
+                        value={config?.nama_institusi || ''} onChange={e => setConfig({...config, nama_institusi: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    
+                    <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-4">
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Ketua Institusi</h4>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Ketua (Untuk Sertifikat)</label>
+                        <input 
+                          type="text" required
+                          value={config?.nama_ketua_institusi || ''} onChange={e => setConfig({...config, nama_ketua_institusi: e.target.value})}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                    
+                    <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-4">
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Pejabat Pengesah (Kaprodi)</h4>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Pejabat</label>
+                          <input 
+                            type="text" required
+                            value={config?.nama_pejabat_pengesah || ''} onChange={e => setConfig({...config, nama_pejabat_pengesah: e.target.value})}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">NIDN Pejabat</label>
+                          <input 
+                            type="text" required
+                            value={config?.nidn_pejabat || ''} onChange={e => setConfig({...config, nidn_pejabat: e.target.value})}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Jabatan</label>
+                        <input 
+                          type="text" required placeholder="Cth: Ketua Program Studi"
+                          value={config?.jabatan_pejabat || ''} onChange={e => setConfig({...config, jabatan_pejabat: e.target.value})}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+
+                    <button type="submit" disabled={savingConfig} className="w-full py-2 bg-indigo-600 text-white font-bold text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                      {savingConfig ? 'Menyimpan...' : 'Simpan Identitas'}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
           </div>
+          
 
         </div>
-
       </div>
     </DashboardLayout>
   );

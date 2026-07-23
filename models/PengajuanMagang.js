@@ -66,7 +66,8 @@ const PengajuanMagangSchema = new mongoose.Schema({
     sistematika_laporan: { type: Number, min: 0, max: 100 },
     kualitas_isi: { type: Number, min: 0, max: 100 },
     penguasaan_materi: { type: Number, min: 0, max: 100 },
-    catatan: { type: String }
+    catatan: { type: String },
+    approved_skills: [{ type: String }]
   },
   transkrip_final: [{
     kode_mk: { type: String },

@@ -50,17 +50,23 @@ export default function LogbookPage() {
 
   const [deskripsi, setDeskripsi] = useState("");
   const [buktiLink, setBuktiLink] = useState("");
-  const [buktiFoto, setBuktiFoto] = useState("");
+  const [dokumentasi, setDokumentasi] = useState([]); // Array of { file: base64, keterangan: string }
   const [editingLogId, setEditingLogId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [achievementToast, setAchievementToast] = useState(null);
   const [showMisi, setShowMisi] = useState(false); // State for Accordion Misi Magang
   const [expandedCpmk, setExpandedCpmk] = useState({});
+  const [expandedPhotos, setExpandedPhotos] = useState({});
 
   const toggleCpmk = (id) => {
     setExpandedCpmk(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const togglePhotos = (id) => {
+    setExpandedPhotos(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const fetchData = useCallback(async () => {
     if (!session?.user?.id) return;
     setLoading(true);
@@ -97,9 +103,14 @@ export default function LogbookPage() {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  const handleFileChange = (e) => {
+
+  const handleAddDokumentasi = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (dokumentasi.length >= 3) {
+        alert("Maksimal 3 foto dokumentasi tambahan.");
+        return;
+      }
       if (file.size > 2 * 1024 * 1024) {
         alert("Ukuran file maksimal 2MB");
         e.target.value = null;
@@ -107,12 +118,18 @@ export default function LogbookPage() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setBuktiFoto(reader.result);
+        setDokumentasi(prev => [...prev, { file: reader.result, keterangan: "" }]);
       };
       reader.readAsDataURL(file);
-    } else {
-      setBuktiFoto("");
     }
+  };
+
+  const handleRemoveDokumentasi = (index) => {
+    setDokumentasi(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateDokumentasi = (index, keterangan) => {
+    setDokumentasi(prev => prev.map((item, i) => i === index ? { ...item, keterangan } : item));
   };
 
   const handleSubmit = async (e) => {
@@ -124,37 +141,30 @@ export default function LogbookPage() {
       return;
     }
     
-    if (!buktiFoto) {
-      alert("Wajib mengunggah file bukti kegiatan nyata di lapangan.");
+    if (dokumentasi.length === 0) {
+      alert("Harap unggah minimal 1 foto dokumentasi kegiatan.");
       return;
     }
     
+    // Pastikan semua dokumentasi ada keterangannya
+    for (let i = 0; i < dokumentasi.length; i++) {
+      if (!dokumentasi[i].keterangan.trim()) {
+        alert(`Harap isi keterangan untuk foto ke-${i+1}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
-      // 1. Call AI Matching
-      const aiRes = await fetch('/api/ai/match-indicator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pengajuan_id: pengajuan._id,
-          deskripsi_kegiatan: deskripsi
-        })
-      });
-      
-      const aiData = await aiRes.json();
-      if (aiData.error) throw new Error(aiData.error);
-      const matched_indicators = aiData.matched || [];
-      
-      // 2. Save Logbook
       const payload = {
-        pengajuan_id: pengajuan._id,
         mahasiswa_id: session.user.id,
+        pengajuan_id: pengajuan._id,
         tanggal,
         deskripsi_kegiatan: deskripsi,
-        matched_indicators,
         bukti_link: buktiLink,
-        bukti_kegiatan: buktiFoto
+        bukti_kegiatan: dokumentasi[0].file, // untuk backward compatibility
+        dokumentasi
       };
 
       let res;
@@ -175,25 +185,14 @@ export default function LogbookPage() {
       }
 
       if (res.ok) {
-        setTanggal("");
+        setTanggal(getTodayLocal());
         setDeskripsi("");
         setBuktiLink("");
-        setBuktiFoto("");
+        setDokumentasi([]);
         setEditingLogId(null);
         
-        // Custom UI Reset for file input
-        const fileInput = document.getElementById("file-upload");
-        if (fileInput) fileInput.value = "";
-        
-        if (matched_indicators.length > 0) {
-           const uniqueCpmk = new Set(matched_indicators.map(m=>m.nama_cpmk)).size;
-           setAchievementToast(`Luar biasa! Kegiatan ini mencakup ${matched_indicators.length} indikator untuk ${uniqueCpmk} CPMK. 🎉`);
-           setTimeout(() => setAchievementToast(null), 8000);
-        } else {
-           showToast("Logbook tersimpan, namun sistem belum menemukan indikator spesifik yang sesuai deskripsimu.");
-        }
-        
         fetchData();
+        showToast("Logbook berhasil disimpan.");
       } else {
         const err = await res.json();
         alert("Gagal: " + err.error);
@@ -210,7 +209,14 @@ export default function LogbookPage() {
     setTanggal(new Date(log.tanggal).toISOString().split('T')[0]);
     setDeskripsi(log.deskripsi_kegiatan);
     setBuktiLink(log.bukti_link || "");
-    setBuktiFoto(log.bukti_kegiatan || "");
+    
+    // Backward compatibility: jika ada bukti_kegiatan lama tapi tidak ada dokumentasi
+    if (log.bukti_kegiatan && (!log.dokumentasi || log.dokumentasi.length === 0)) {
+      setDokumentasi([{ file: log.bukti_kegiatan, keterangan: "Bukti Kegiatan" }]);
+    } else {
+      setDokumentasi(log.dokumentasi || []);
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -219,9 +225,7 @@ export default function LogbookPage() {
     setTanggal(getTodayLocal());
     setDeskripsi("");
     setBuktiLink("");
-    setBuktiFoto("");
-    const fileInput = document.getElementById("file-upload");
-    if (fileInput) fileInput.value = "";
+    setDokumentasi([]);
   };
 
   // Get status badge UI
@@ -232,30 +236,6 @@ export default function LogbookPage() {
       case 'divalidasi_dpl': return <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded-md">Divalidasi DPL</span>;
       case 'revisi': return <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold rounded-md">Revisi</span>;
       default: return <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-md">{status}</span>;
-    }
-  };
-
-  const handleViewFile = (dataUrl) => {
-    try {
-      const arr = dataUrl.split(',');
-      const mimeMatch = arr[0].match(/:(.*?);/);
-      if (!mimeMatch) {
-        window.open(dataUrl, '_blank');
-        return;
-      }
-      const mime = mimeMatch[1];
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      const blob = new Blob([u8arr], { type: mime });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch (e) {
-      console.error("Gagal membuka file:", e);
-      window.open(dataUrl, '_blank');
     }
   };
 
@@ -378,15 +358,53 @@ export default function LogbookPage() {
                   <textarea required minLength="100" value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)} onPaste={(e) => { e.preventDefault(); alert("Maaf, fitur paste dinonaktifkan. Harap ketik deskripsi secara manual untuk merefleksikan kegiatan Anda."); }} onCopy={(e) => e.preventDefault()} rows="5" placeholder="Contoh: Hari ini saya ditugaskan oleh mentor untuk menganalisis alur kerja di divisi operasional. Saya melakukan wawancara dengan 3 staf dan berhasil memetakan bahwa kelemahan utama berada di lambatnya proses cetak dokumen. Saya mencatat hal ini dan merencanakan pembuatan sistem antrean besok." className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm leading-relaxed"></textarea>
                   <p className={`text-xs mt-1 text-right font-medium ${deskripsi.trim().split(/\s+/).length < 20 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-500'}`}>{deskripsi.trim() === "" ? 0 : deskripsi.trim().split(/\s+/).length} / 20 kata</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Upload Bukti (Foto/PDF) <span className="text-red-500">*</span></label>
-                    <input required id="file-upload" type="file" accept="image/*,application/pdf" onChange={handleFileChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50" />
-                  </div>
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Link Google Drive / URL (Opsional)</label>
                     <input value={buktiLink} onChange={(e) => setBuktiLink(e.target.value)} type="url" placeholder="https://..." className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium text-sm" />
                   </div>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-700/50 pt-4 mt-2">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-200">
+                      Dokumentasi Kegiatan <span className="text-red-500">*</span> <span className="text-xs font-normal text-slate-500">(Wajib min 1, Maks 3 Foto)</span>
+                    </label>
+                    {dokumentasi.length < 3 && (
+                      <label className="cursor-pointer text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                        + Tambah Foto
+                        <input type="file" accept="image/*" className="hidden" onChange={handleAddDokumentasi} />
+                      </label>
+                    )}
+                  </div>
+                  
+                  {dokumentasi.length > 0 ? (
+                    <div className="space-y-3">
+                      {dokumentasi.map((doc, idx) => (
+                        <div key={idx} className="flex gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 items-start">
+                          <img src={doc.file} alt={`Doc ${idx}`} className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-600 shrink-0" />
+                          <div className="flex-grow">
+                            <input 
+                              type="text" 
+                              required 
+                              placeholder="Keterangan foto ini..." 
+                              value={doc.keterangan} 
+                              onChange={(e) => handleUpdateDokumentasi(idx, e.target.value)} 
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-indigo-500 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-100 mb-1" 
+                            />
+                            <p className="text-[10px] text-slate-500">Wajib diisi</p>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveDokumentasi(idx)} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg shrink-0">
+                            🗑️
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-red-200 dark:border-red-900/30 text-red-500 text-xs font-medium">
+                      Silakan tambah minimal 1 foto kegiatan.
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-3 pt-2">
                   {editingLogId && (
@@ -490,11 +508,6 @@ export default function LogbookPage() {
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        {log.bukti_kegiatan && (
-                          <button onClick={() => handleViewFile(log.bukti_kegiatan)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors shadow-sm cursor-pointer">
-                            <span>🖼️</span> Bukti File
-                          </button>
-                        )}
                         {log.bukti_link && (
                           <a href={log.bukti_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800/50 px-3 py-1.5 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors shadow-sm">
                             <span>🔗</span> Link Bukti
@@ -506,6 +519,14 @@ export default function LogbookPage() {
                         >
                           <span>🎯</span> Capaian
                         </button>
+                        {(log.dokumentasi?.length > 0 || log.bukti_kegiatan) && (
+                          <button 
+                            onClick={() => togglePhotos(log._id)}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-sm cursor-pointer"
+                          >
+                            <span>📸</span> Lihat Bukti
+                          </button>
+                        )}
                         <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
                         {getStatusBadge(log.status_validasi)}
                       </div>
@@ -523,16 +544,40 @@ export default function LogbookPage() {
                       </div>
                     )}
 
-                    <p className="text-slate-700 dark:text-slate-300 text-sm mt-4 leading-relaxed whitespace-pre-line">{log.deskripsi_kegiatan}</p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <p className="text-slate-700 dark:text-slate-300 text-sm mt-4 leading-relaxed whitespace-pre-line flex-grow">{log.deskripsi_kegiatan}</p>
+                    </div>
+                    
+                    {expandedPhotos[log._id] && (log.dokumentasi?.length > 0 || log.bukti_kegiatan) && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Dokumentasi Kegiatan</p>
+                        <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                          {/* Rendering array dokumentasi */}
+                          {log.dokumentasi?.map((doc, idx) => (
+                            <a key={idx} href={doc.file} target="_blank" rel="noopener noreferrer" className="group relative w-20 h-20 shrink-0 cursor-pointer">
+                              <img src={doc.file} alt={doc.keterangan} className="w-full h-full object-cover rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm" />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center p-1 transition-opacity">
+                                <p className="text-white text-[8px] text-center font-bold leading-tight line-clamp-3">{doc.keterangan}</p>
+                              </div>
+                            </a>
+                          ))}
+                          
+                          {/* Backward compatibility: jika ada bukti_kegiatan tapi tidak ada array dokumentasi */}
+                          {(!log.dokumentasi || log.dokumentasi.length === 0) && log.bukti_kegiatan && log.bukti_kegiatan.startsWith('data:image') && (
+                            <a href={log.bukti_kegiatan} target="_blank" rel="noopener noreferrer" className="group relative w-20 h-20 shrink-0 cursor-pointer">
+                              <img src={log.bukti_kegiatan} alt="Bukti Kegiatan Lama" className="w-full h-full object-cover rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm" />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center p-1 transition-opacity">
+                                <p className="text-white text-[8px] text-center font-bold leading-tight line-clamp-3">Bukti Kegiatan Lama</p>
+                              </div>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     
                     {expandedCpmk[log._id] && (
                       <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-200">
-                          {log.status_validasi === 'menunggu_mentor' || log.status_validasi === 'revisi' ? (
-                            <div className="flex gap-3 items-center bg-slate-50/80 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 w-full max-w-md">
-                              <span className="text-lg">🔒</span>
-                              <span className="text-xs text-slate-600 dark:text-slate-400 font-bold leading-relaxed">Menunggu evaluasi dari mentor untuk membuka daftar capaian kegiatan ini.</span>
-                            </div>
-                          ) : log.matched_indicators && log.matched_indicators.length > 0 ? (
+                        {log.matched_indicators && log.matched_indicators.length > 0 ? (
                             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 w-full">
                               <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                 <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi
@@ -543,7 +588,7 @@ export default function LogbookPage() {
                                     <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
                                     <div>
                                       <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">
-                                        {ind.matkul_nama ? <span className="text-indigo-600 mr-1">[{ind.matkul_kode} {ind.matkul_nama}]</span> : null}
+                                        {ind.matkul_nama ? <span className="text-indigo-600 mr-1">{ind.matkul_nama} : </span> : null}
                                         {ind.nama_cpmk}
                                       </p>
                                       <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
@@ -559,6 +604,7 @@ export default function LogbookPage() {
                                   </div>
                                 ))}
                               </div>
+
                             </div>
                           ) : (
                             <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start w-full">

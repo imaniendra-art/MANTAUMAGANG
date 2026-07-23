@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import Logbook from '@/models/Logbook';
 import PengajuanMagang from '@/models/PengajuanMagang';
@@ -6,6 +7,9 @@ import User from '@/models/User';
 import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
 import PaketMatkul from '@/models/PaketMatkul';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   await dbConnect();
   try {
@@ -31,7 +35,14 @@ export async function GET(req) {
 
     // Mentor: Tarik semua logbook yang menunggu validasi lapangan
     if (role === 'mentor' && userId) {
-      const pengajuans = await PengajuanMagang.find({ mentor_id: userId }).select('_id');
+      let mentorObjectId;
+      try { mentorObjectId = new mongoose.Types.ObjectId(userId); } catch(e) { mentorObjectId = userId; }
+      
+      // Fallback in case session holds old deleted 'joko' ID
+      const mentorIds = [mentorObjectId];
+      if (userId === '6a60e47d9cd0a0e9b0334840') mentorIds.push(new mongoose.Types.ObjectId('6a60d90a317d1e8f2197d1e3'));
+
+      const pengajuans = await PengajuanMagang.find({ mentor_id: { $in: mentorIds } }).select('_id');
       const pengajuanIds = pengajuans.map(p => p._id);
 
       const logs = await Logbook.find({ 
@@ -46,7 +57,14 @@ export async function GET(req) {
 
     // Mentor Histori: Tarik semua logbook yang sudah tidak pending (riwayat)
     if (role === 'mentor_histori' && userId) {
-      const pengajuans = await PengajuanMagang.find({ mentor_id: userId }).select('_id');
+      let mentorObjectId;
+      try { mentorObjectId = new mongoose.Types.ObjectId(userId); } catch(e) { mentorObjectId = userId; }
+      
+      // Fallback in case session holds old deleted 'joko' ID
+      const mentorIds = [mentorObjectId];
+      if (userId === '6a60e47d9cd0a0e9b0334840') mentorIds.push(new mongoose.Types.ObjectId('6a60d90a317d1e8f2197d1e3'));
+
+      const pengajuans = await PengajuanMagang.find({ mentor_id: { $in: mentorIds } }).select('_id');
       const pengajuanIds = pengajuans.map(p => p._id);
 
       const logs = await Logbook.find({ 
@@ -167,6 +185,11 @@ export async function PATCH(req) {
       { new: true }
     );
     
+    if (deskripsi_kegiatan) {
+      // Jalankan ulang AI jika deskripsi berubah
+      processAILogbook(updated._id, updated.pengajuan_id, updated.deskripsi_kegiatan).catch(err => console.error("Background AI Error:", err));
+    }
+    
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -224,14 +247,19 @@ ${allIndicators.map((ind, i) => `[ID: ${i}] CPMK: ${ind.nama_cpmk} | Indikator U
 DESKRIPSI KEGIATAN MAHASISWA (Bahasa Lapangan):
 "${deskripsi_kegiatan}"
 
-Keluarkan hasil analisis Anda HANYA dalam format JSON array yang valid. Setiap elemen array adalah sebuah object dengan key "id" (angka ID indikator) dan "alasan" (penjelasan singkat maksimal 2 kalimat).
+Keluarkan hasil analisis Anda HANYA dalam format JSON object yang valid. Object tersebut harus memiliki dua key: "matched" dan "skills".
+1. "matched": array dari indikator yang cocok (object dengan "id" dan "alasan").
+2. "skills": array of string yang berisi daftar skill (soft skill & hard skill) yang didapatkan atau dilatih mahasiswa pada hari itu (misal: ["Komunikasi", "Administrasi Data", "Problem Solving"]). Maksimal 5 skill.
+
 Contoh output jika cocok:
-[
-  { "id": 1, "alasan": "Berdasarkan kegiatan 'memperkenalkan diri', mahasiswa menunjukkan kemampuan komunikasi awal." },
-  { "id": 3, "alasan": "Tindakan 'membantu mengerjakan laporan' menunjukkan partisipasi dalam tugas teknis." }
-]
-Contoh output jika tidak ada yang cocok: []
-Jangan tambahkan teks apapun selain array JSON tersebut.`;
+{
+  "matched": [
+    { "id": 1, "alasan": "Berdasarkan kegiatan 'memperkenalkan diri', mahasiswa menunjukkan kemampuan komunikasi awal." }
+  ],
+  "skills": ["Komunikasi", "Public Speaking", "Observasi"]
+}
+Contoh output jika tidak ada yang cocok: { "matched": [], "skills": ["Observasi"] }
+Jangan tambahkan teks apapun selain object JSON tersebut.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
@@ -240,28 +268,42 @@ Jangan tambahkan teks apapun selain array JSON tersebut.`;
     const textResult = response.text();
     
     let matchedData = [];
+    let extractedSkills = [];
     try {
-      matchedData = JSON.parse(textResult);
+      const parsedData = JSON.parse(textResult);
+      if (parsedData.matched && Array.isArray(parsedData.matched)) {
+        matchedData = parsedData.matched;
+      } else if (Array.isArray(parsedData)) { // Fallback if AI still outputs array
+        matchedData = parsedData;
+      }
+      if (parsedData.skills && Array.isArray(parsedData.skills)) {
+        extractedSkills = parsedData.skills;
+      }
     } catch (e) {
-      console.error("Gagal parse output AI:", textResult);
+      console.error("Gagal parsing JSON dari Gemini:", e, textResult);
+      return;
     }
 
-    const matchedIndicators = [];
-    if (Array.isArray(matchedData)) {
-      matchedData.forEach(item => {
-        if (item && typeof item.id === 'number' && allIndicators[item.id]) {
-          matchedIndicators.push({
-            ...allIndicators[item.id],
-            alasan: item.alasan || "Relevan dengan kegiatan mahasiswa."
-          });
-        }
-      });
-    }
+    const finalIndicators = [];
+    matchedData.forEach(match => {
+      const ind = allIndicators[match.id];
+      if (ind) {
+        finalIndicators.push({
+          matkul_kode: ind.matkul_kode,
+          matkul_nama: ind.matkul_nama,
+          cpmk_id: ind.cpmk_id,
+          nama_cpmk: ind.nama_cpmk,
+          indikator: ind.indikator,
+          alasan: match.alasan
+        });
+      }
+    });
 
-    // Update logbook with matched indicators
-    if (matchedIndicators.length > 0) {
-      await Logbook.findByIdAndUpdate(logbookId, { matched_indicators: matchedIndicators.slice(0, 3) });
-    }
+    await Logbook.findByIdAndUpdate(logbookId, { 
+      matched_indicators: finalIndicators,
+      extracted_skills: extractedSkills,
+      nilai_otomatis: finalIndicators.length * 10 
+    });
   } catch (error) {
     console.error("Background AI process error:", error);
   }

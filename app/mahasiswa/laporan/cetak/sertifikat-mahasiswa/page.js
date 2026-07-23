@@ -26,14 +26,14 @@ export default function CetakSertifikatMahasiswa() {
 
   if (!data) return <div className="p-10 text-center">Memuat Sertifikat...</div>;
 
-  const { laporan, pengajuan } = data;
+  const { laporan, pengajuan, config } = data;
   const mhs = session.user;
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
 
-  // URL validasi untuk QR Code
-  const identifier = laporan.nomor_sertifikat ? encodeURIComponent(laporan.nomor_sertifikat) : laporan._id;
-  const verifyUrl = host ? `${host}/verify/${identifier}` : '';
-  const qrCodeUrl = verifyUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}` : '';
+  const ketuaInstitusi = config?.nama_ketua_institusi || 'Dr. Ibrahim Syah, S.E.,M.M';
+
+  const verifyUrlSertifikat = host ? `${host}/validasi/sertifikat/${laporan._id}` : '';
+  const qrCodeUrl = verifyUrlSertifikat ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrlSertifikat)}` : '';
 
   // Evaluasi calculations
   const transkrip = pengajuan.transkrip_final || [];
@@ -45,6 +45,7 @@ export default function CetakSertifikatMahasiswa() {
 
   const mentorPenilaian = pengajuan.penilaian_mentor || {};
   const dplPenilaian = pengajuan.penilaian_dpl || {};
+  const approvedSkills = dplPenilaian.approved_skills || [];
   
   const additionalIndicators = [
     { nama: "Sikap & Kedisiplinan", nilai: mentorPenilaian.kedisiplinan },
@@ -79,8 +80,11 @@ export default function CetakSertifikatMahasiswa() {
     return 'E';
   }
 
-  const dplQrCodeUrl = verifyUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl + "?validator=dpl")}` : '';
-  const mentorQrCodeUrl = verifyUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl + "?validator=mentor")}` : '';
+  const verifyUrlDpl = host ? `${host}/validasi/penilaian-dpl/${laporan._id}` : '';
+  const dplQrCodeUrl = verifyUrlDpl ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrlDpl)}` : '';
+  
+  const verifyUrlMentor = host ? `${host}/validasi/penilaian-mentor/${laporan._id}` : '';
+  const mentorQrCodeUrl = verifyUrlMentor ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrlMentor)}` : '';
   
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
@@ -197,7 +201,7 @@ export default function CetakSertifikatMahasiswa() {
                 Ketua Sekolah Tinggi Ilmu Manajemen<br/>
                 Indonesia YAPMI Makassar,
               </p>
-              <p className="font-bold text-slate-800 mt-2">Dr. Ibrahim Syah, S.E.,M.M</p>
+              <p className="font-bold text-slate-800 mt-2">{ketuaInstitusi}</p>
             </div>
           </div>
 
@@ -205,11 +209,11 @@ export default function CetakSertifikatMahasiswa() {
       </div>
 
       {/* HALAMAN 2: TRANSKRIP / NILAI */}
-      <div id="page-2" className="page-break w-[297mm] h-[210mm] bg-white relative overflow-hidden shadow-2xl print:shadow-none flex flex-col p-[20mm] mt-8 print:mt-0">
+      <div id="page-2" className="page-break w-[297mm] h-[210mm] bg-white relative overflow-hidden shadow-2xl print:shadow-none flex flex-col px-[20mm] pb-[20mm] pt-[10mm] mt-8 print:mt-0">
         <img src="/bg_serti.png" alt="Background" className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0" />
         <div className="relative z-10 flex flex-col h-full items-center">
           
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-widest mb-4 mt-2" style={{ fontFamily: 'Georgia, serif' }}>Daftar Penilaian Magang</h2>
+          <h2 className="text-[26px] font-black text-slate-900 uppercase tracking-widest mb-4 mt-1" style={{ fontFamily: 'Georgia, serif' }}>Daftar Penilaian Magang Berdampak</h2>
 
           <div className="w-full max-w-5xl flex justify-between text-sm font-bold text-slate-700 mb-4 px-4 bg-white/50 py-2 rounded-lg border border-slate-200 shadow-sm">
             <p>NAMA: {mhs.nama_lengkap}</p>
@@ -217,7 +221,7 @@ export default function CetakSertifikatMahasiswa() {
             <p>LOKASI: {mitra}</p>
           </div>
 
-          <div className="w-full max-w-5xl bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-sm flex-1 mb-4 flex flex-col gap-4">
+          <div className="w-full max-w-5xl bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex flex-col gap-4">
             
             <div className="flex flex-row gap-6 w-full h-full">
               {/* Tabel Mata Kuliah */}
@@ -281,18 +285,36 @@ export default function CetakSertifikatMahasiswa() {
               </div>
             </div>
             
-            {/* Rata-Rata Keseluruhan */}
-            <div className="mt-auto pt-4 border-t-2 border-slate-800">
-              <table className="w-full text-left mb-2">
-                <tbody>
-                  <tr className="font-bold text-slate-800 bg-slate-100/50">
-                    <td className="py-2 px-3 text-right text-sm">RATA-RATA KESELURUHAN :</td>
-                    <td className="py-2 px-3 text-center text-sm w-24">{Math.round(average)}</td>
-                    <td className="py-2 px-3 text-center text-emerald-600 text-sm w-24">{predikat}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-500 pt-1 border-t border-slate-200">
+            <div className="w-full flex gap-6 mt-1">
+              {/* Hard Skill / Soft Skill */}
+              <div className="w-2/3 flex flex-col">
+                <h3 className="font-bold text-slate-800 mb-1.5 text-sm">C. Keterampilan yang Diperoleh (Skill)</h3>
+                <div className="flex flex-wrap gap-1.5 p-2 border border-slate-300 rounded-lg bg-slate-50/50 min-h-[50px] content-start">
+                  {approvedSkills.length > 0 ? approvedSkills.map((skill, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded border border-emerald-200">
+                      {skill}
+                    </span>
+                  )) : (
+                    <span className="text-[10px] text-slate-500 italic mt-0.5">Belum ada keterampilan yang dinilai.</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Rata-Rata Keseluruhan (Besar tapi tidak memanjang) */}
+              <div className="w-1/3 flex flex-col justify-end">
+                <div className="bg-slate-50 border-2 border-slate-800 rounded-xl p-2 flex flex-col items-center justify-center text-center shadow-sm">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-0.5">Rata-Rata Akhir</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-slate-900 leading-none">{Math.round(average)}</span>
+                    <span className="text-lg font-bold text-emerald-600">{predikat}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Skala Nilai */}
+            <div className="mt-auto pt-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-500 pt-1 border-t-2 border-slate-800">
                 <span className="font-bold text-slate-700">Skala Nilai:</span>
                 <span>A: 85-100 (Sangat Baik)</span>
                 <span>A-: 80-84</span>
@@ -307,7 +329,7 @@ export default function CetakSertifikatMahasiswa() {
 
           </div>
 
-          <div className="w-full flex justify-between items-end mt-auto px-10 pb-4">
+          <div className="w-full flex justify-between items-end mt-auto px-10">
             {/* Tanda Tangan DPL */}
             <div className="text-center w-56 flex flex-col items-center">
               <p className="text-xs text-slate-600 mb-2">Dosen Pembimbing Lapangan</p>

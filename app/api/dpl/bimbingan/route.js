@@ -76,10 +76,15 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { pengajuanId, nama_lengkap, nomor_hp, email } = await req.json();
+    const { pengajuanId, nama_lengkap, nomor_hp, email, assignToGroup } = await req.json();
 
     if (!pengajuanId || !nama_lengkap || !nomor_hp) {
       return NextResponse.json({ error: "Nama dan Nomor HP wajib diisi" }, { status: 400 });
+    }
+
+    const currentPengajuan = await PengajuanMagang.findOne({ _id: pengajuanId, dpl_id: session.user.id });
+    if (!currentPengajuan) {
+      return NextResponse.json({ error: "Pengajuan tidak ditemukan atau Anda tidak memiliki akses" }, { status: 404 });
     }
 
     let mentorUser = await User.findOne({ nim_nidn: nomor_hp });
@@ -99,13 +104,39 @@ export async function POST(req) {
       });
     }
 
-    const pengajuan = await PengajuanMagang.findOneAndUpdate(
-      { _id: pengajuanId, dpl_id: session.user.id },
-      { mentor_id: mentorUser._id },
-      { new: true }
-    ).populate('mentor_id', 'nama_lengkap nomor_hp email');
+    let updatedPengajuan;
 
-    return NextResponse.json({ message: "Mentor berhasil ditugaskan", pengajuan });
+    if (assignToGroup) {
+      // Find all students under this DPL at the exact same location
+      const matchQuery = { dpl_id: session.user.id, status_pengajuan: 'disetujui' };
+      
+      if (currentPengajuan.tipe_instansi === 'baru' && currentPengajuan.instansi_baru?.nama_instansi) {
+        matchQuery.tipe_instansi = 'baru';
+        matchQuery['instansi_baru.nama_instansi'] = currentPengajuan.instansi_baru.nama_instansi;
+      } else if (currentPengajuan.mitra_id) {
+        matchQuery.mitra_id = currentPengajuan.mitra_id;
+      } else if (currentPengajuan.posisi_id) {
+        matchQuery.posisi_id = currentPengajuan.posisi_id;
+      }
+
+      // Update all matching pengajuan
+      await PengajuanMagang.updateMany(
+        matchQuery,
+        { mentor_id: mentorUser._id }
+      );
+
+      // Fetch the updated current one for response
+      updatedPengajuan = await PengajuanMagang.findById(pengajuanId).populate('mentor_id', 'nama_lengkap nomor_hp email');
+    } else {
+      // Update only the selected one
+      updatedPengajuan = await PengajuanMagang.findOneAndUpdate(
+        { _id: pengajuanId, dpl_id: session.user.id },
+        { mentor_id: mentorUser._id },
+        { new: true }
+      ).populate('mentor_id', 'nama_lengkap nomor_hp email');
+    }
+
+    return NextResponse.json({ message: "Mentor berhasil ditugaskan", pengajuan: updatedPengajuan });
   } catch (error) {
     if (error.code === 11000) {
       return NextResponse.json({ error: "Nomor HP atau Email sudah terdaftar di sistem. Silakan gunakan yang lain." }, { status: 400 });

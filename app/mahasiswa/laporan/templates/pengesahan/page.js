@@ -2,20 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import QRCode from 'react-qr-code';
 
 export default function CetakPengesahan() {
   const { data: session } = useSession();
   const [data, setData] = useState(null);
+  const [config, setConfig] = useState(null);
 
   useEffect(() => {
     if (session?.user?.id) {
-      fetch(`/api/laporan-akhir?mhsId=${session.user.id}`)
-        .then(res => res.json())
-        .then(d => {
-          if (d.laporan && d.pengajuan) {
-            setData(d);
-          }
-        });
+      Promise.all([
+        fetch(`/api/laporan-akhir?mhsId=${session.user.id}`).then(res => res.json()),
+        fetch('/api/config').then(res => res.json())
+      ]).then(([d, c]) => {
+        if (d.laporan && d.pengajuan) {
+          setData(d);
+        }
+        if (c) {
+          setConfig(c);
+        }
+      }).catch(console.error);
     }
   }, [session]);
 
@@ -79,7 +85,7 @@ export default function CetakPengesahan() {
               <p>Menyetujui,</p>
               <p className="mb-24">Dosen Pembimbing Lapangan</p>
               <p className="font-bold underline">(..................................................)</p>
-              <p>NIDN. </p>
+              <p>NIDN. {pengajuan?.dpl_id?.nidn || "......................"}</p>
             </div>
             <div className="w-1/2">
               <p>Makassar, ............................</p>
@@ -89,11 +95,16 @@ export default function CetakPengesahan() {
             </div>
           </div>
           
-          <div className="mt-20 text-center">
+          <div className="mt-20 text-center flex flex-col items-center">
             <p>Mengetahui,</p>
-            <p className="mb-24">Ketua Program Studi Manajemen</p>
-            <p className="font-bold underline">(..................................................)</p>
-            <p>NIDN. </p>
+            <p className="mb-6">{config?.jabatan_pejabat || 'Ketua Program Studi Manajemen'}</p>
+            <div className="mb-6 inline-flex flex-col items-center justify-center">
+              {typeof window !== 'undefined' && data?.laporan?._id && (
+                <QRCode value={`${window.location.origin}/validasi/pengesahan/${data.laporan._id}`} size={64} />
+              )}
+            </div>
+            <p className="font-bold underline uppercase">{config?.nama_pejabat_pengesah || '(..................................................)'}</p>
+            <p>NIDN. {config?.nidn_pejabat || '......................'}</p>
           </div>
           
         </div>

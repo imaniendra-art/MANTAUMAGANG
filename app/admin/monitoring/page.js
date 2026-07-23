@@ -101,13 +101,31 @@ function StudentLogbookList({ mahasiswaId }) {
                         <div className="mt-1.5 pl-2 border-l-2 border-indigo-100 dark:border-indigo-900/30 space-y-1.5 py-1">
                           {log.matched_indicators.map((ind, idx) => (
                             <div key={idx} className="mb-1">
-                              <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase leading-tight">{ind.nama_cpmk}</p>
+                              <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase leading-tight">
+                                {ind.matkul_nama ? <span className="text-indigo-600 mr-1">{ind.matkul_nama} : </span> : null}
+                                {ind.nama_cpmk}
+                              </p>
                             </div>
                           ))}
                         </div>
                       </details>
                     ) : (
                       <span className="text-[11px] text-slate-400 italic">Tidak ada</span>
+                    )}
+                    
+                    {log.extracted_skills && log.extracted_skills.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <span>🧠</span> Skill Dilatih
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {log.extracted_skills.map((skill, idx) => (
+                            <span key={idx} className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-medium rounded border border-emerald-100 dark:border-emerald-800/50 line-clamp-1 max-w-full" title={skill}>
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </td>
                   

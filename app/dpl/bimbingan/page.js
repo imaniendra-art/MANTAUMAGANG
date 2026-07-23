@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { UserCircle, MapPin, Phone, Mail, CheckCircle2, UserPlus, Clock } from "lucide-react";
+import { UserCircle, MapPin, Phone, Mail, CheckCircle2, UserPlus, Clock, Printer, Lock, Unlock, Ban, Edit } from "lucide-react";
 
 export default function DaftarBimbinganPage() {
   const [bimbinganList, setBimbinganList] = useState([]);
@@ -12,6 +12,7 @@ export default function DaftarBimbinganPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedPengajuan, setSelectedPengajuan] = useState(null);
   const [mentorForm, setMentorForm] = useState({ nama_lengkap: '', nomor_hp: '', email: '' });
+  const [assignToGroup, setAssignToGroup] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   
@@ -119,6 +120,7 @@ export default function DaftarBimbinganPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           pengajuanId: selectedPengajuan._id,
+          assignToGroup,
           ...mentorForm
         })
       });
@@ -169,33 +171,30 @@ export default function DaftarBimbinganPage() {
               <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
                 <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold uppercase text-xs">
                   <tr>
-                    <th className="px-6 py-4">Mahasiswa</th>
+                    <th className="px-6 py-4 w-10 text-center">No</th>
+                    <th className="px-6 py-4">NIM</th>
+                    <th className="px-6 py-4">Nama</th>
+                    <th className="px-6 py-4">No HP</th>
                     <th className="px-6 py-4">Lokasi Magang</th>
                     <th className="px-6 py-4">Mentor Lapangan</th>
-                    <th className="px-6 py-4">Waktu Penarikan</th>
-                    <th className="px-6 py-4 text-center">Status / Aksi</th>
+                    <th className="px-6 py-4">Perkiraan Waktu Penarikan</th>
+                    <th className="px-6 py-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                  {bimbinganList.map((item) => {
+                  {bimbinganList.map((item, index) => {
                     const mhs = item.mahasiswa_id;
                     const mentor = item.mentor_id;
                     const lokasi = item.posisi_id?.mitra_id?.nama_instansi || item.mitra_id?.nama_instansi || item.detail_tempat?.nama || "-";
                     
                     return (
                       <tr key={item._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="px-6 py-4 text-center">{index + 1}</td>
+                        <td className="px-6 py-4 font-mono text-xs">{mhs?.nim_nidn}</td>
+                        <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">{mhs?.nama_lengkap}</td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold shrink-0">
-                              {mhs?.nama_lengkap?.charAt(0) || "M"}
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-800 dark:text-slate-100">{mhs?.nama_lengkap}</p>
-                              <p className="text-xs text-slate-500">{mhs?.nim_nidn}</p>
-                              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
-                                <Phone className="w-3 h-3" /> {mhs?.nomor_hp || "-"}
-                              </div>
-                            </div>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
+                            <Phone className="w-3 h-3" /> {mhs?.nomor_hp || "-"}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -206,11 +205,26 @@ export default function DaftarBimbinganPage() {
                         </td>
                         <td className="px-6 py-4">
                           {mentor ? (
-                            <div>
+                            <div className="group relative pr-6">
                               <p className="font-bold text-slate-800 dark:text-slate-100">{mentor.nama_lengkap}</p>
                               <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
                                 <Phone className="w-3 h-3" /> {mentor.nomor_hp}
                               </div>
+                              <button 
+                                onClick={() => { 
+                                  setSelectedPengajuan(item); 
+                                  setMentorForm({
+                                    nama_lengkap: mentor.nama_lengkap,
+                                    nomor_hp: mentor.nomor_hp,
+                                    email: mentor.email || ''
+                                  });
+                                  setShowModal(true); 
+                                }}
+                                className="absolute right-0 top-1 p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-200 dark:border-slate-700"
+                                title="Edit/Ganti Mentor"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           ) : (
                             <button 
@@ -236,50 +250,62 @@ export default function DaftarBimbinganPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 align-middle text-center">
-                          {item.is_dpl_confirmed ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-500/30">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Terkonfirmasi
-                              </span>
+                          <div className="flex flex-row flex-nowrap items-center justify-center gap-2 w-max mx-auto">
+                            <a 
+                              href={`/mahasiswa/laporan/templates/pengantar?pengajuanId=${item._id}`}
+                              target="_blank"
+                              className="p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:hover:bg-sky-500/20 border border-sky-200 dark:border-sky-500/30 transition-all"
+                              title="Cetak Surat Pengantar"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </a>
+                            
+                            {item.is_dpl_confirmed ? (
+                              <>
+                                <span className="p-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-500/30 cursor-help" title="Terkonfirmasi">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                </span>
                               
-                              <button
-                                onClick={() => handleToggleLaporan(item._id, item.is_laporan_unlocked)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold w-full max-w-[140px] border transition-all ${
-                                  item.is_laporan_unlocked
-                                    ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400"
-                                    : "bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400"
-                                }`}
-                              >
-                                {item.is_laporan_unlocked ? "🔒 Kunci Laporan" : "🔓 Buka Laporan"}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 text-[10px] font-bold rounded-full">
-                                <Clock className="w-3 h-3" /> Menunggu Penyerahan
-                              </span>
-                              <button 
-                                onClick={() => handleKonfirmasi(item._id)}
-                                disabled={!mentor}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all w-full max-w-[140px] ${
-                                  mentor 
-                                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20" 
-                                    : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-                                }`}
-                                title={!mentor ? "Tugaskan mentor terlebih dahulu" : "Konfirmasi penyerahan"}
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Konfirmasi
-                              </button>
-                              
-                              <button 
-                                onClick={() => { setSelectedPengajuan(item); setShowRejectModal(true); }}
-                                className="px-4 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 transition-all w-full max-w-[140px]"
-                                title="Tandai ditolak jika instansi menolak mahasiswa"
-                              >
-                                🚫 Ditolak Instansi
-                              </button>
-                            </div>
-                          )}
+                                <button
+                                  onClick={() => handleToggleLaporan(item._id, item.is_laporan_unlocked)}
+                                  className={`p-2 rounded-lg border transition-all ${
+                                    item.is_laporan_unlocked
+                                      ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400"
+                                      : "bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400"
+                                  }`}
+                                  title={item.is_laporan_unlocked ? "Kunci Laporan" : "Buka Laporan"}
+                                >
+                                  {item.is_laporan_unlocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="p-2 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 cursor-help" title="Menunggu Penyerahan">
+                                  <Clock className="w-4 h-4" />
+                                </span>
+                                <button 
+                                  onClick={() => handleKonfirmasi(item._id)}
+                                  disabled={!mentor}
+                                  className={`p-2 rounded-lg transition-all ${
+                                    mentor 
+                                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20" 
+                                      : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+                                  }`}
+                                  title={!mentor ? "Tugaskan mentor terlebih dahulu untuk mengonfirmasi penyerahan" : "Konfirmasi penyerahan"}
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                </button>
+                                
+                                <button 
+                                  onClick={() => { setSelectedPengajuan(item); setShowRejectModal(true); }}
+                                  className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 transition-all"
+                                  title="Tandai ditolak jika instansi menolak mahasiswa"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -338,6 +364,19 @@ export default function DaftarBimbinganPage() {
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   placeholder="budi@perusahaan.com"
                 />
+              </div>
+
+              <div className="flex items-start gap-3 mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                <input 
+                  type="checkbox" 
+                  id="assignToGroup"
+                  checked={assignToGroup}
+                  onChange={e => setAssignToGroup(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="assignToGroup" className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed cursor-pointer">
+                  Terapkan mentor ini secara otomatis untuk <strong>seluruh mahasiswa bimbingan saya</strong> yang magang di lokasi instansi yang sama.
+                </label>
               </div>
               
               <div className="flex justify-end gap-3 pt-4">

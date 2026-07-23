@@ -7,6 +7,8 @@ import PaketMatkul from '@/models/PaketMatkul';
 import MitraMagang from '@/models/MitraMagang';
 import Logbook from '@/models/Logbook';
 import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
+import AppConfig from '@/models/AppConfig';
+
 export async function GET(request) {
   await dbConnect();
   try {
@@ -64,7 +66,9 @@ export async function GET(request) {
 
     const logbooks = await Logbook.find({ pengajuan_id: pengajuan._id }).sort({ tanggal: 1 });
 
-    return NextResponse.json({ laporan, pengajuan, logbooks });
+    const config = await AppConfig.findOne({ singleton_id: 'GLOBAL_CONFIG' });
+
+    return NextResponse.json({ laporan, pengajuan, logbooks, config: config || {} });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });

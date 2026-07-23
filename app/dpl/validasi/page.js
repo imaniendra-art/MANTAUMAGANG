@@ -345,7 +345,10 @@ export default function DplValidasi() {
                                                   <div key={idx} className="flex gap-2.5 items-start">
                                                     <div className="text-amber-400 text-xs mt-0.5 shrink-0">⭐</div>
                                                     <div>
-                                                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">{ind.nama_cpmk}</p>
+                                                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-1 rounded shadow-sm inline-block mb-1 border border-slate-100 dark:border-slate-700">
+                                                        {ind.matkul_nama ? <span className="text-indigo-600 mr-1">{ind.matkul_nama} : </span> : null}
+                                                        {ind.nama_cpmk}
+                                                      </p>
                                                       <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ind.indikator}</p>
                                                       {ind.alasan && (
                                                         <div className="mt-1.5 p-2 bg-indigo-100/50 dark:bg-indigo-900/30 rounded border border-indigo-200/50 dark:border-indigo-800/50">
@@ -359,6 +362,21 @@ export default function DplValidasi() {
                                                   </div>
                                                 ))}
                                               </div>
+                                              
+                                              {log.extracted_skills && log.extracted_skills.length > 0 && (
+                                                <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
+                                                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                    <span>🧠</span> Skill yang Dilatih
+                                                  </p>
+                                                  <div className="flex flex-wrap gap-1.5">
+                                                    {log.extracted_skills.map((skill, idx) => (
+                                                      <span key={idx} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-md border border-emerald-200/50 dark:border-emerald-800/50">
+                                                        {skill}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              )}
                                             </div>
                                           ) : (
                                             <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/50 flex gap-2 items-start">

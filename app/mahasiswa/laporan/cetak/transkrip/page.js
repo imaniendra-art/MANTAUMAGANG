@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import QRCode from 'react-qr-code';
 
 export default function CetakTranskrip() {
   const { data: session } = useSession();
   const [data, setData] = useState(null);
+  const [config, setConfig] = useState(null);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -14,6 +16,7 @@ export default function CetakTranskrip() {
         .then(d => {
           if (d.laporan && d.pengajuan) {
             setData(d);
+            fetch("/api/config").then(r=>r.json()).then(c=>{if(c)setConfig(c)});
           }
         });
     }
@@ -325,16 +328,25 @@ export default function CetakTranskrip() {
         <div className="w-full mt-12">
           <div className="flex justify-between items-end">
             <div className="w-1/3">
-              <img src={qrCodeUrl} alt="QR Code SKPI" className="w-24 h-24 border border-slate-300 p-1 bg-white mb-2" />
+              {typeof window !== 'undefined' && data?.laporan?._id && (
+                <div className="w-24 h-24 border border-slate-300 p-1 bg-white mb-2 flex items-center justify-center">
+                  <QRCode value={`${window.location.origin}/validasi/transkrip/${data.laporan._id}`} size={86} />
+                </div>
+              )}
               <p className="text-xs font-bold text-slate-800">Verifikasi Digital Pangkalan Data</p>
               <p className="text-[10px] text-slate-500 italic">Scan untuk memastikan keaslian dokumen di platform MANTAU MAGANG STIMI YAPMI Makassar.</p>
             </div>
             
-            <div className="w-1/3 text-center text-sm">
+            <div className="w-1/3 text-center text-sm flex flex-col items-center">
               <p className="mb-1">Makassar, {new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</p>
-              <p className="font-bold mb-20">Ketua Program Studi Manajemen</p>
-              <div className="border-b-[1.5px] border-black w-full mb-1"></div>
-              <p className="text-xs">NIDN. ........................................</p>
+              <p className="font-bold">{config?.jabatan_pejabat || 'Ketua Program Studi Manajemen'}</p>
+              <div className="my-4 inline-flex flex-col items-center justify-center">
+              {typeof window !== 'undefined' && data?.laporan?._id && (
+                <QRCode value={`${window.location.origin}/validasi/transkrip/${data.laporan._id}`} size={48} />
+              )}
+              </div>
+              <p className="font-bold underline uppercase">{config?.nama_pejabat_pengesah || '........................................'}</p>
+              <p className="text-xs mt-1">NIDN. {config?.nidn_pejabat || '........................................'}</p>
             </div>
           </div>
         </div>

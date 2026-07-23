@@ -15,6 +15,8 @@ export default function ProfilPage() {
     confirmPassword: ""
   });
   const [profilData, setProfilData] = useState({
+    nama_lengkap: "",
+    nim_nidn: "",
     nidn: "",
     nomor_hp: "",
     email: ""
@@ -36,6 +38,8 @@ export default function ProfilPage() {
   useEffect(() => {
     if (session?.user) {
       setProfilData({
+        nama_lengkap: session.user.nama_lengkap || "",
+        nim_nidn: session.user.nim_nidn || "",
         nidn: session.user.nidn || "",
         nomor_hp: session.user.nomor_hp || "",
         email: session.user.email || ""
@@ -137,7 +141,7 @@ export default function ProfilPage() {
               </div>
               {session?.user?.nidn && role !== 'mahasiswa' && role !== 'mentor' && (
                 <div>
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">NIDN</p>
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">NIDN / NUPTK / NIP</p>
                   <p className="text-lg font-bold text-slate-900 dark:text-white">{session?.user?.nidn}</p>
                 </div>
               )}
@@ -154,15 +158,38 @@ export default function ProfilPage() {
             )}
             
             <form onSubmit={handleProfilSubmit} className="space-y-5 mb-8">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nama Lengkap</label>
+                <input 
+                  type="text" 
+                  required
+                  value={profilData.nama_lengkap}
+                  onChange={(e) => setProfilData({...profilData, nama_lengkap: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nama Lengkap beserta gelar"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ID (Username) / NIM</label>
+                <input 
+                  type="text" 
+                  required
+                  value={profilData.nim_nidn}
+                  onChange={(e) => setProfilData({...profilData, nim_nidn: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  placeholder="Username untuk Login"
+                />
+              </div>
+
               {role !== 'mahasiswa' && role !== 'mentor' && (
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">NIDN / NIP</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">NIDN / NUPTK / NIP</label>
                   <input 
                     type="text" 
                     value={profilData.nidn}
                     onChange={(e) => setProfilData({...profilData, nidn: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    placeholder="Masukkan NIDN atau NIP Anda"
+                    placeholder="Masukkan NIDN, NUPTK, atau NIP Anda"
                   />
                 </div>
               )}
