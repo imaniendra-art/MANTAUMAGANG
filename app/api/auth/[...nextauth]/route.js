@@ -10,14 +10,33 @@ export const authOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email / NIM / Username", type: "text", placeholder: "Email, NIM, atau Username" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        magicToken: { type: "hidden" }
       },
       async authorize(credentials) {
+        await connectToDatabase();
+
+        // Handle Magic Token for Mentor Login
+        if (credentials?.magicToken) {
+          const user = await User.findOne({ magic_token: credentials.magicToken, role: 'mentor' });
+          if (!user) throw new Error('Link akses tidak valid atau sudah kadaluarsa');
+          
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            nama_lengkap: user.nama_lengkap,
+            nim_nidn: user.nim_nidn,
+            nidn: user.nidn,
+            role: user.role,
+            isFirstLogin: user.isFirstLogin,
+            konsentrasi: user.konsentrasi || "Manajemen SDM (Default)",
+            program_studi: user.program_studi || "Manajemen (S1)",
+          };
+        }
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email/NIM dan password wajib diisi');
         }
-
-        await connectToDatabase();
         
         const identifier = credentials.email.trim();
         const query = {
@@ -56,6 +75,7 @@ export const authOptions = {
   session: {
     strategy: "jwt",
   },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

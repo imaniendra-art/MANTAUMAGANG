@@ -44,6 +44,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  magic_token: {
+    type: String,
+    required: false,
+  },
   isFirstLogin: {
     type: Boolean,
     default: true,

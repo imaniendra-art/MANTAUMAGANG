@@ -9,6 +9,7 @@ import PaketMatkul from '@/models/PaketMatkul';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export async function GET(req) {
   await dbConnect();
@@ -28,7 +29,7 @@ export async function GET(req) {
         path: 'posisi_id',
         populate: { path: 'mitra_id' }
       })
-      .populate('mentor_id', 'nama_lengkap nomor_hp email')
+      .populate('mentor_id', 'nama_lengkap nomor_hp email magic_token')
       .sort({ updatedAt: -1 });
 
     return NextResponse.json(bimbinganList);
@@ -100,8 +101,14 @@ export async function POST(req) {
         password: hashedPassword,
         role: 'mentor',
         nomor_hp,
+        magic_token: crypto.randomBytes(32).toString('hex'),
         isFirstLogin: true
       });
+    } else {
+      if (!mentorUser.magic_token) {
+        mentorUser.magic_token = crypto.randomBytes(32).toString('hex');
+        await mentorUser.save();
+      }
     }
 
     let updatedPengajuan;
@@ -126,14 +133,14 @@ export async function POST(req) {
       );
 
       // Fetch the updated current one for response
-      updatedPengajuan = await PengajuanMagang.findById(pengajuanId).populate('mentor_id', 'nama_lengkap nomor_hp email');
+      updatedPengajuan = await PengajuanMagang.findById(pengajuanId).populate('mentor_id', 'nama_lengkap nomor_hp email magic_token');
     } else {
       // Update only the selected one
       updatedPengajuan = await PengajuanMagang.findOneAndUpdate(
         { _id: pengajuanId, dpl_id: session.user.id },
         { mentor_id: mentorUser._id },
         { new: true }
-      ).populate('mentor_id', 'nama_lengkap nomor_hp email');
+      ).populate('mentor_id', 'nama_lengkap nomor_hp email magic_token');
     }
 
     return NextResponse.json({ message: "Mentor berhasil ditugaskan", pengajuan: updatedPengajuan });

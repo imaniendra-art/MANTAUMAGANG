@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { UserCircle, MapPin, Phone, Mail, CheckCircle2, UserPlus, Clock, Printer, Lock, Unlock, Ban, Edit } from "lucide-react";
+import { UserCircle, MapPin, Phone, Mail, CheckCircle2, UserPlus, Clock, Printer, Lock, Unlock, Ban, Edit, Copy } from "lucide-react";
 
 export default function DaftarBimbinganPage() {
   const [bimbinganList, setBimbinganList] = useState([]);
@@ -207,9 +207,24 @@ export default function DaftarBimbinganPage() {
                           {mentor ? (
                             <div className="group relative pr-6">
                               <p className="font-bold text-slate-800 dark:text-slate-100">{mentor.nama_lengkap}</p>
-                              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
-                                <Phone className="w-3 h-3" /> {mentor.nomor_hp}
-                              </div>
+                              <div className="flex flex-col gap-1 mt-1 text-[11px] text-slate-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <Phone className="w-3 h-3" /> {mentor.nomor_hp}
+                                  </div>
+                                  {mentor.magic_token && (
+                                    <button 
+                                      onClick={() => {
+                                        const magicUrl = `${window.location.origin}/magic-login?token=${mentor.magic_token}`;
+                                        navigator.clipboard.writeText(`Halo Bapak/Ibu ${mentor.nama_lengkap}, berikut adalah akses langsung ke sistem Mantau Magang untuk memvalidasi logbook: \n\n${magicUrl}`);
+                                        alert("Link akses berhasil disalin ke clipboard!");
+                                      }}
+                                      className="flex items-center gap-1 w-max px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-600 dark:text-blue-400 rounded-md transition-colors border border-blue-100 dark:border-blue-800/50"
+                                      title="Copy Link Akses Mentor"
+                                    >
+                                      <Copy className="w-3 h-3" /> Salin Link Akses
+                                    </button>
+                                  )}
+                                </div>
                               <button 
                                 onClick={() => { 
                                   setSelectedPengajuan(item); 
@@ -451,3 +466,4 @@ export default function DaftarBimbinganPage() {
     </DashboardLayout>
   );
 }
+

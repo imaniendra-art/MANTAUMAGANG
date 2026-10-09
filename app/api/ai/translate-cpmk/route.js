@@ -50,7 +50,7 @@ Aturan Output:
 2. DILARANG KERAS menggunakan kata pembuka seperti "Berikut adalah..." atau penutup.
 3. Gunakan bahasa yang mudah dipahami mahasiswa (tidak kaku/akademis) tapi sangat spesifik agar AI Penilai Logbook mudah mendeteksi kecocokannya.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const saranKegiatan = response.text().trim();

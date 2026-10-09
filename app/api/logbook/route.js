@@ -261,7 +261,7 @@ Contoh output jika cocok:
 Contoh output jika tidak ada yang cocok: { "matched": [], "skills": ["Observasi"] }
 Jangan tambahkan teks apapun selain object JSON tersebut.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
