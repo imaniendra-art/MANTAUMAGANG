@@ -6,7 +6,7 @@ import LaporanAkhir from '@/models/LaporanAkhir';
 import PaketMatkul from '@/models/PaketMatkul';
 import MitraMagang from '@/models/MitraMagang';
 import Logbook from '@/models/Logbook';
-import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
+import { saveBase64File, deleteLocalFile } from '@/lib/storage';
 import AppConfig from '@/models/AppConfig';
 
 export async function GET(request) {
@@ -105,13 +105,13 @@ export async function POST(request) {
 
     let laporan = await LaporanAkhir.findOne({ pengajuan_id: pengajuan._id });
 
-    // Helper untuk menangani upload file MinIO
+    // Helper untuk menangani upload file ke local disk storage
     const handleFileUpload = async (base64Data, oldUrl, folder) => {
       if (base64Data && base64Data.startsWith('data:')) {
         if (oldUrl) {
-          try { await deleteFromMinio(oldUrl); } catch (e) { console.error("Error deleting old file:", e); }
+          try { await deleteLocalFile(oldUrl); } catch (e) { console.error("Error deleting old file:", e); }
         }
-        return await uploadToMinio(base64Data, folder);
+        return await saveBase64File(base64Data, folder);
       }
       return base64Data;
     };

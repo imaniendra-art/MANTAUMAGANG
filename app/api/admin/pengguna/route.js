@@ -4,12 +4,22 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
-
 import PengajuanMagang from '@/models/PengajuanMagang';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+async function isAuthorizedAdmin() {
+  const session = await getServerSession(authOptions);
+  return session?.user?.role === 'admin_prodi';
+}
 
 export async function GET(req) {
   await dbConnect();
   try {
+    if (!await isAuthorizedAdmin()) {
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role') || 'mahasiswa';
     
@@ -57,6 +67,10 @@ export async function GET(req) {
 export async function POST(req) {
   await dbConnect();
   try {
+    if (!await isAuthorizedAdmin()) {
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+    }
+
     const data = await req.json();
     const { nim_nidn, nidn, nama_lengkap, nomor_hp, role } = data;
 
@@ -94,6 +108,10 @@ export async function POST(req) {
 export async function PATCH(req) {
   await dbConnect();
   try {
+    if (!await isAuthorizedAdmin()) {
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+    }
+
     const data = await req.json();
     const { id, action, ...updateData } = data;
 
@@ -125,6 +143,10 @@ export async function PATCH(req) {
 export async function DELETE(req) {
   await dbConnect();
   try {
+    if (!await isAuthorizedAdmin()) {
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     

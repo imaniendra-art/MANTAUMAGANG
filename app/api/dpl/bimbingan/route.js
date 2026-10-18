@@ -49,9 +49,13 @@ export async function PATCH(req) {
     const pengajuanId = (await req.json()).pengajuanId;
     if (!pengajuanId) return NextResponse.json({ error: "Missing pengajuanId" }, { status: 400 });
 
+    const Periode = (await import('@/models/Periode')).default;
+    const activePeriode = await Periode.findOne({ is_active: true });
+    const durasiBulan = activePeriode?.durasi_bulan || 4;
+
     const tanggalMulai = new Date();
     const tanggalSelesai = new Date();
-    tanggalSelesai.setMonth(tanggalSelesai.getMonth() + 4);
+    tanggalSelesai.setMonth(tanggalSelesai.getMonth() + durasiBulan);
 
     const pengajuan = await PengajuanMagang.findOneAndUpdate(
       { _id: pengajuanId, dpl_id: session.user.id },

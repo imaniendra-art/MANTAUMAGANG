@@ -14,6 +14,11 @@ const PeriodeSchema = new mongoose.Schema({
   batas_laporan: {
     type: Date
   },
+  durasi_bulan: {
+    type: Number,
+    enum: [2, 3, 4],
+    default: 4
+  },
   is_active: {
     type: Boolean,
     default: false

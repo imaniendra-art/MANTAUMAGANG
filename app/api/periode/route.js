@@ -22,16 +22,19 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { nama_periode, status_pendaftaran, batas_laporan } = await req.json();
+    const { nama_periode, status_pendaftaran, batas_laporan, durasi_bulan } = await req.json();
 
     // Jika belum ada periode sama sekali, jadikan aktif otomatis
     const count = await Periode.countDocuments();
     const is_active = count === 0;
 
+    const validatedDurasi = [2, 3, 4].includes(Number(durasi_bulan)) ? Number(durasi_bulan) : 4;
+
     const newPeriode = await Periode.create({
       nama_periode,
       status_pendaftaran: status_pendaftaran || 'Ditutup',
       batas_laporan: batas_laporan ? new Date(batas_laporan) : null,
+      durasi_bulan: validatedDurasi,
       is_active
     });
 
@@ -66,13 +69,19 @@ export async function PATCH(req) {
 
     // Skenario 2: Update Data
     if (data.action === 'update_data') {
-      const { id, status_pendaftaran, batas_laporan } = data;
+      const { id, status_pendaftaran, batas_laporan, durasi_bulan } = data;
+      const updateFields = {
+        status_pendaftaran, 
+        batas_laporan: batas_laporan ? new Date(batas_laporan) : null 
+      };
+
+      if (durasi_bulan && [2, 3, 4].includes(Number(durasi_bulan))) {
+        updateFields.durasi_bulan = Number(durasi_bulan);
+      }
+
       const updated = await Periode.findByIdAndUpdate(
         id, 
-        { 
-          status_pendaftaran, 
-          batas_laporan: batas_laporan ? new Date(batas_laporan) : null 
-        }, 
+        updateFields, 
         { new: true }
       );
       return NextResponse.json(updated);

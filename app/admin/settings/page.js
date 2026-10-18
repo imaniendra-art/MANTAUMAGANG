@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/DashboardLayout';
+import CustomSelect from '@/components/CustomSelect';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -13,6 +14,7 @@ export default function SettingsPage() {
   const [newPeriode, setNewPeriode] = useState({
     nama_periode: '',
     status_pendaftaran: 'Dibuka',
+    durasi_bulan: 4,
     batas_laporan: ''
   });
 
@@ -63,7 +65,7 @@ export default function SettingsPage() {
       });
       if (res.ok) {
         setShowAddForm(false);
-        setNewPeriode({ nama_periode: '', status_pendaftaran: 'Dibuka', batas_laporan: '' });
+        setNewPeriode({ nama_periode: '', status_pendaftaran: 'Dibuka', durasi_bulan: 4, batas_laporan: '' });
         fetchData(); // reload
       } else {
         const error = await res.json();
@@ -100,12 +102,12 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpdateStatus = async (id, status_pendaftaran, batas_laporan) => {
+  const handleUpdateStatus = async (id, status_pendaftaran, batas_laporan, durasi_bulan) => {
     try {
       const res = await fetch('/api/periode', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_data', id, status_pendaftaran, batas_laporan })
+        body: JSON.stringify({ action: 'update_data', id, status_pendaftaran, batas_laporan, durasi_bulan })
       });
       if (res.ok) {
         fetchData();
@@ -183,14 +185,14 @@ export default function SettingsPage() {
           
           {/* Manajemen Periode */}
           <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 rounded-t-2xl">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   📅 Master Periode
                 </h3>
                 <button 
                   onClick={() => setShowAddForm(!showAddForm)}
-                  className="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold rounded-lg transition-colors"
+                  className="px-3.5 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold rounded-xl transition-colors"
                 >
                   {showAddForm ? 'Batal' : '+ Tambah'}
                 </button>
@@ -200,34 +202,49 @@ export default function SettingsPage() {
                 <div className="p-5 border-b border-indigo-100 dark:border-slate-700 bg-indigo-50/50 dark:bg-slate-900/50 animate-in slide-in-from-top-2">
                   <form onSubmit={handleAddPeriode} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Periode (Tahun Ajaran)</label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Periode (Tahun Ajaran)</label>
                       <input 
                         type="text" required placeholder="Cth: Ganjil 2026/2027"
                         value={newPeriode.nama_periode} onChange={e => setNewPeriode({...newPeriode, nama_periode: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status Daftar</label>
-                        <select 
-                          value={newPeriode.status_pendaftaran} onChange={e => setNewPeriode({...newPeriode, status_pendaftaran: e.target.value})}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
-                        >
-                          <option>Dibuka</option>
-                          <option>Ditutup</option>
-                        </select>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Status Daftar</label>
+                        <CustomSelect 
+                          value={newPeriode.status_pendaftaran}
+                          onChange={(val) => setNewPeriode({...newPeriode, status_pendaftaran: val})}
+                          options={[
+                            { value: 'Dibuka', label: 'Dibuka' },
+                            { value: 'Ditutup', label: 'Ditutup' }
+                          ]}
+                          size="md"
+                        />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Batas Laporan</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Waktu Magang</label>
+                        <CustomSelect 
+                          value={newPeriode.durasi_bulan}
+                          onChange={(val) => setNewPeriode({...newPeriode, durasi_bulan: Number(val)})}
+                          options={[
+                            { value: 2, label: '2 Bulan Kalender' },
+                            { value: 3, label: '3 Bulan Kalender' },
+                            { value: 4, label: '4 Bulan Kalender' }
+                          ]}
+                          size="md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Batas Laporan</label>
                         <input 
                           type="date"
                           value={newPeriode.batas_laporan} onChange={e => setNewPeriode({...newPeriode, batas_laporan: e.target.value})}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm cursor-pointer"
                         />
                       </div>
                     </div>
-                    <button type="submit" className="w-full py-2 bg-indigo-600 text-white font-bold text-sm rounded-lg hover:bg-indigo-700">
+                    <button type="submit" className="w-full py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition-all">
                       Simpan Periode
                     </button>
                   </form>
@@ -239,34 +256,57 @@ export default function SettingsPage() {
                 {!loading && periodes.length === 0 && <p className="text-center text-sm text-slate-500">Belum ada periode.</p>}
                 
                 {periodes.map(p => (
-                  <div key={p._id} className={`p-4 rounded-xl border transition-all ${p.is_active ? 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
+                  <div key={p._id} className={`p-4 rounded-2xl border transition-all ${p.is_active ? 'border-indigo-300 bg-indigo-50/70 dark:bg-indigo-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                           {p.nama_periode}
-                          {p.is_active && <span className="px-2 py-0.5 bg-indigo-500 text-white text-[9px] uppercase tracking-wider font-black rounded">Aktif</span>}
+                          {p.is_active && <span className="px-2.5 py-0.5 bg-indigo-500 text-white text-[9px] uppercase tracking-wider font-black rounded-full shadow-xs">Aktif</span>}
                         </h4>
-                        <p className="text-xs text-slate-500 mt-1">Batas Laporan: {p.batas_laporan ? new Date(p.batas_laporan).toLocaleDateString('id-ID') : 'Belum diatur'}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px] font-bold rounded-lg">
+                            ⏱️ {p.durasi_bulan || 4} Bulan Kalender
+                          </span>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <p className="text-xs text-slate-500">Batas Laporan: {p.batas_laporan ? new Date(p.batas_laporan).toLocaleDateString('id-ID') : 'Belum diatur'}</p>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         {!p.is_active && (
-                          <button onClick={() => handleSetActive(p._id)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded">Aktifkan</button>
+                          <button onClick={() => handleSetActive(p._id)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">Aktifkan</button>
                         )}
-                        <button onClick={() => handleDelete(p._id)} className="text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded">Hapus</button>
+                        <button onClick={() => handleDelete(p._id)} className="text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors">Hapus</button>
                       </div>
                     </div>
                     
-                    {/* Jika aktif, tampilkan opsi edit pendaftaran */}
+                    {/* Jika aktif, tampilkan opsi edit pendaftaran & waktu magang */}
                     {p.is_active && (
-                      <div className="pt-3 mt-3 border-t border-indigo-100 dark:border-indigo-800/50 flex gap-2 items-center">
-                        <select 
-                          className="flex-1 text-xs px-2 py-1.5 rounded border border-indigo-200 dark:border-slate-600 bg-white dark:bg-slate-700"
-                          value={p.status_pendaftaran}
-                          onChange={(e) => handleUpdateStatus(p._id, e.target.value, p.batas_laporan)}
-                        >
-                          <option value="Dibuka">Pendaftaran Buka</option>
-                          <option value="Ditutup">Pendaftaran Tutup</option>
-                        </select>
+                      <div className="pt-3 mt-3 border-t border-indigo-100 dark:border-indigo-800/50 flex flex-wrap gap-3 items-center">
+                        <div className="flex-1 min-w-[140px]">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Status Pendaftaran</label>
+                          <CustomSelect 
+                            value={p.status_pendaftaran}
+                            onChange={(val) => handleUpdateStatus(p._id, val, p.batas_laporan, p.durasi_bulan || 4)}
+                            options={[
+                              { value: 'Dibuka', label: 'Pendaftaran Buka' },
+                              { value: 'Ditutup', label: 'Pendaftaran Tutup' }
+                            ]}
+                            size="sm"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-[140px]">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Waktu Magang</label>
+                          <CustomSelect 
+                            value={p.durasi_bulan || 4}
+                            onChange={(val) => handleUpdateStatus(p._id, p.status_pendaftaran, p.batas_laporan, Number(val))}
+                            options={[
+                              { value: 2, label: '2 Bulan Kalender' },
+                              { value: 3, label: '3 Bulan Kalender' },
+                              { value: 4, label: '4 Bulan Kalender' }
+                            ]}
+                            size="sm"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -290,22 +330,22 @@ export default function SettingsPage() {
                 ) : (
                   <form onSubmit={handleSaveConfig} className="space-y-5">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Institusi</label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Institusi</label>
                       <input 
                         type="text" required 
                         value={config?.nama_institusi || ''} onChange={e => setConfig({...config, nama_institusi: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm"
                       />
                     </div>
                     
                     <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-4">
                       <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Ketua Institusi</h4>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Ketua (Untuk Sertifikat)</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Ketua (Untuk Sertifikat)</label>
                         <input 
                           type="text" required
                           value={config?.nama_ketua_institusi || ''} onChange={e => setConfig({...config, nama_ketua_institusi: e.target.value})}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm"
                         />
                       </div>
                     </div>
@@ -313,37 +353,36 @@ export default function SettingsPage() {
                     <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-4">
                       <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Pejabat Pengesah (Kaprodi)</h4>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Pejabat</label>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Pejabat</label>
                           <input 
                             type="text" required
                             value={config?.nama_pejabat_pengesah || ''} onChange={e => setConfig({...config, nama_pejabat_pengesah: e.target.value})}
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">NIDN Pejabat</label>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">NIDN Pejabat</label>
                           <input 
                             type="text" required
                             value={config?.nidn_pejabat || ''} onChange={e => setConfig({...config, nidn_pejabat: e.target.value})}
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm"
                           />
                         </div>
                       </div>
                       
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Jabatan</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Jabatan</label>
                         <input 
                           type="text" required placeholder="Cth: Ketua Program Studi"
                           value={config?.jabatan_pejabat || ''} onChange={e => setConfig({...config, jabatan_pejabat: e.target.value})}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all shadow-sm"
                         />
                       </div>
                     </div>
 
-
-                    <button type="submit" disabled={savingConfig} className="w-full py-2 bg-indigo-600 text-white font-bold text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                    <button type="submit" disabled={savingConfig} className="w-full py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition-all disabled:opacity-50">
                       {savingConfig ? 'Menyimpan...' : 'Simpan Identitas'}
                     </button>
                   </form>

@@ -39,16 +39,27 @@ export const authOptions = {
         }
         
         const identifier = credentials.email.trim();
-        const query = {
-          $or: [
-            { nim_nidn: identifier },
-            { email: identifier },
-            { nidn: identifier },
-            { nomor_hp: identifier }
-          ]
-        };
-        
-        const user = await User.findOne(query);
+        const lower = identifier.toLowerCase();
+        const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const caseInsensitiveRegex = new RegExp(`^${escaped}$`, 'i');
+
+        const orConditions = [
+          { email: caseInsensitiveRegex },
+          { nim_nidn: caseInsensitiveRegex },
+          { nidn: caseInsensitiveRegex },
+          { nomor_hp: identifier }
+        ];
+
+        // Dukungan alias username cepat untuk pengujian (prioritaskan akun demo resmi)
+        if (lower === 'admin' || lower === 'admin_prodi') {
+          orConditions.unshift({ email: 'admin@stimi.ac.id' }, { email: 'admin@mantaumagang.com' });
+        } else if (lower === 'dpl') {
+          orConditions.unshift({ email: 'dpl@stimi.ac.id' });
+        } else if (lower === 'mahasiswa') {
+          orConditions.unshift({ email: 'mahasiswa@stimi.ac.id' });
+        }
+
+        const user = await User.findOne({ $or: orConditions });
         if (!user) {
           throw new Error('Akun tidak terdaftar');
         }

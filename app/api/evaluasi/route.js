@@ -23,7 +23,7 @@ export async function GET(req) {
     const results = await Promise.all(pengajuans.map(async (p) => {
       const logs = await Logbook.find({ 
         pengajuan_id: p._id, 
-        status_validasi: 'divalidasi_dpl' 
+        status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl'] } 
       }).select('nilai_otomatis matched_indicators extracted_skills');
       
       let total = 0;
@@ -100,7 +100,7 @@ export async function PATCH(req) {
 
     const logs = await Logbook.find({ 
       pengajuan_id: id, 
-      status_validasi: 'divalidasi_dpl' 
+      status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl'] } 
     });
 
     // Kumpulkan semua indikator yang pernah diceklis dari logbook

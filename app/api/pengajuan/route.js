@@ -7,7 +7,7 @@ import User from '@/models/User';
 import PaketMatkul from '@/models/PaketMatkul';
 import fs from 'fs';
 import path from 'path';
-import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
+import { saveBase64File, deleteLocalFile } from '@/lib/storage';
 
 export async function POST(req) {
   await dbConnect();
@@ -15,6 +15,14 @@ export async function POST(req) {
     const contentType = req.headers.get('content-type') || '';
     let payload = {};
     let file_cv_path = '';
+
+    const Periode = (await import('@/models/Periode')).default;
+    const activePeriode = await Periode.findOne({ is_active: true });
+    const durasiBulan = activePeriode?.durasi_bulan || 4;
+
+    const tglMulai = new Date();
+    const tglSelesai = new Date();
+    tglSelesai.setMonth(tglSelesai.getMonth() + durasiBulan);
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
@@ -30,8 +38,8 @@ export async function POST(req) {
           alamat: formData.get('mitra_alamat') || 'Alamat Mitra',
           posisi: formData.get('posisi_nama') || 'Posisi Magang'
         },
-        tanggal_mulai: new Date(),
-        tanggal_selesai: new Date(new Date().setMonth(new Date().getMonth() + 4)),
+        tanggal_mulai: tglMulai,
+        tanggal_selesai: tglSelesai,
       };
 
       const file_cv = formData.get('file_cv') || formData.get('file');
@@ -40,18 +48,34 @@ export async function POST(req) {
         const buffer = Buffer.from(bytes);
         
         const base64Data = `data:${file_cv.type || 'application/pdf'};base64,${buffer.toString('base64')}`;
-        file_cv_path = await uploadToMinio(base64Data, 'cv');
+        file_cv_path = await saveBase64File(base64Data, 'cv');
       }
     } else {
       payload = await req.json();
       file_cv_path = payload.file_cv_path || '';
     }
 
-    // Fallback required fields for existing schema
+    const User = (await import('@/models/User')).default;
+    
+    // Pemetaan Paket Matkul berdasarkan konsentrasi mahasiswa
     let paket_matkul_id = payload.paket_matkul_id;
-    if (!paket_matkul_id) {
-      const paket = await PaketMatkul.findOne();
-      if (paket) paket_matkul_id = paket._id;
+    if (!paket_matkul_id && payload.mahasiswa_id) {
+      const mhsData = await User.findById(payload.mahasiswa_id).select('konsentrasi program_studi');
+      if (mhsData?.konsentrasi) {
+        const matchedPaket = await PaketMatkul.findOne({
+          nama_paket: { $regex: new RegExp(mhsData.konsentrasi, 'i') },
+          jenis_skema: 'instansi'
+        });
+        if (matchedPaket) paket_matkul_id = matchedPaket._id;
+      }
+      if (!paket_matkul_id) {
+        const instansiPaket = await PaketMatkul.findOne({ jenis_skema: 'instansi' });
+        if (instansiPaket) paket_matkul_id = instansiPaket._id;
+      }
+      if (!paket_matkul_id) {
+        const anyPaket = await PaketMatkul.findOne();
+        if (anyPaket) paket_matkul_id = anyPaket._id;
+      }
     }
 
     const pengajuan = await PengajuanMagang.create({
@@ -158,7 +182,7 @@ export async function PATCH(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    const { id, dpl_id, status_pengajuan, alasan_penolakan } = data;
+    const { id, dpl_id, paket_matkul_id, status_pengajuan, alasan_penolakan } = data;
     
     if (!id || !status_pengajuan) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -170,13 +194,14 @@ export async function PATCH(req) {
     
     const updatePayload = { status_pengajuan };
     if (dpl_id) updatePayload.dpl_id = dpl_id;
+    if (paket_matkul_id) updatePayload.paket_matkul_id = paket_matkul_id;
     if (alasan_penolakan) updatePayload.alasan_penolakan = alasan_penolakan;
 
     if (status_pengajuan === 'ditolak') {
       try {
         const existingPengajuan = await PengajuanMagang.findById(id);
         if (existingPengajuan && existingPengajuan.file_cv_path) {
-          await deleteFromMinio(existingPengajuan.file_cv_path);
+          await deleteLocalFile(existingPengajuan.file_cv_path);
           updatePayload.file_cv_path = ""; // Kosongkan path di database agar tidak jadi sampah
         }
       } catch (err) {

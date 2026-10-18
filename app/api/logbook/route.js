@@ -4,7 +4,7 @@ import dbConnect from '@/lib/db';
 import Logbook from '@/models/Logbook';
 import PengajuanMagang from '@/models/PengajuanMagang';
 import User from '@/models/User'; 
-import { uploadToMinio, deleteFromMinio } from '@/lib/minio';
+import { saveBase64File, deleteLocalFile } from '@/lib/storage';
 import PaketMatkul from '@/models/PaketMatkul';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -102,27 +102,45 @@ export async function POST(req) {
   try {
     const data = await req.json();
     
-    // SEMENTARA: Upload ke MinIO di bypass, langsung simpan base64 ke MongoDB
-    /*
-    if (data.bukti_kegiatan && data.bukti_kegiatan.startsWith('data:')) {
-      data.bukti_kegiatan = await uploadToMinio(data.bukti_kegiatan, 'logbook');
+    if (!data.pengajuan_id) {
+      return NextResponse.json({ error: "Missing pengajuan_id" }, { status: 400 });
+    }
+
+    // Validasi Gembok Serah Terima DPL
+    const pengajuan = await PengajuanMagang.findById(data.pengajuan_id);
+    if (!pengajuan || pengajuan.status_pengajuan !== 'disetujui' || !pengajuan.is_dpl_confirmed) {
+      return NextResponse.json({ 
+        error: "Akses logbook terkunci. Pengajuan magang belum disetujui atau belum diserahterimakan oleh DPL ke Mentor." 
+      }, { status: 403 });
+    }
+
+    // Simpan foto bukti_kegiatan ke disk fisik
+    if (data.bukti_kegiatan && typeof data.bukti_kegiatan === 'string' && data.bukti_kegiatan.startsWith('data:')) {
+      data.bukti_kegiatan = await saveBase64File(data.bukti_kegiatan, 'logbook');
     }
     
+    // Simpan seluruh foto dokumentasi ke disk fisik
     if (data.dokumentasi && Array.isArray(data.dokumentasi)) {
       for (let i = 0; i < data.dokumentasi.length; i++) {
-        if (data.dokumentasi[i].file && data.dokumentasi[i].file.startsWith('data:')) {
-          data.dokumentasi[i].file = await uploadToMinio(data.dokumentasi[i].file, 'logbook');
+        if (data.dokumentasi[i]?.file && typeof data.dokumentasi[i].file === 'string' && data.dokumentasi[i].file.startsWith('data:')) {
+          data.dokumentasi[i].file = await saveBase64File(data.dokumentasi[i].file, 'logbook');
         }
       }
     }
-    */
 
     const newLog = await Logbook.create(data);
 
-    // Jalankan proses AI di background (tidak di-await)
-    processAILogbook(newLog._id, data.pengajuan_id, data.deskripsi_kegiatan).catch(err => console.error("Background AI Error:", err));
+    // Jalankan analisis semantik AI Gemini untuk mencocokkan CPMK
+    if (data.deskripsi_kegiatan) {
+      try {
+        await processAILogbook(newLog._id, data.pengajuan_id, data.deskripsi_kegiatan);
+      } catch (err) {
+        console.error("AI CPMK matching error:", err);
+      }
+    }
 
-    return NextResponse.json(newLog, { status: 201 });
+    const finalLog = await Logbook.findById(newLog._id);
+    return NextResponse.json(finalLog || newLog, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -143,31 +161,21 @@ export async function PATCH(req) {
     if (catatan_revisi !== undefined) updateData.catatan_revisi = catatan_revisi;
     if (deskripsi_kegiatan) updateData.deskripsi_kegiatan = deskripsi_kegiatan;
     if (bukti_link !== undefined) updateData.bukti_link = bukti_link;
+    
     if (bukti_kegiatan) {
-      // SEMENTARA: Upload ke MinIO di bypass, langsung simpan base64 ke MongoDB
-      /*
-      if (bukti_kegiatan.startsWith('data:')) {
-        const logbook = await Logbook.findById(id);
-        if (logbook && logbook.bukti_kegiatan && !logbook.bukti_kegiatan.startsWith('data:')) {
-          try { await deleteFromMinio(logbook.bukti_kegiatan); } catch (e) { console.error("Error deleting old file:", e); }
-        }
-        updateData.bukti_kegiatan = await uploadToMinio(bukti_kegiatan, 'logbook');
+      if (typeof bukti_kegiatan === 'string' && bukti_kegiatan.startsWith('data:')) {
+        updateData.bukti_kegiatan = await saveBase64File(bukti_kegiatan, 'logbook');
       } else {
         updateData.bukti_kegiatan = bukti_kegiatan;
       }
-      */
-      updateData.bukti_kegiatan = bukti_kegiatan;
     }
 
     if (dokumentasi && Array.isArray(dokumentasi)) {
-      // SEMENTARA: Upload ke MinIO di bypass, langsung simpan base64 ke MongoDB
-      /*
       for (let i = 0; i < dokumentasi.length; i++) {
-        if (dokumentasi[i].file && dokumentasi[i].file.startsWith('data:')) {
-          dokumentasi[i].file = await uploadToMinio(dokumentasi[i].file, 'logbook');
+        if (dokumentasi[i]?.file && typeof dokumentasi[i].file === 'string' && dokumentasi[i].file.startsWith('data:')) {
+          dokumentasi[i].file = await saveBase64File(dokumentasi[i].file, 'logbook');
         }
       }
-      */
       updateData.dokumentasi = dokumentasi;
     }
     if (matched_indicators) updateData.matched_indicators = matched_indicators;
@@ -186,11 +194,15 @@ export async function PATCH(req) {
     );
     
     if (deskripsi_kegiatan) {
-      // Jalankan ulang AI jika deskripsi berubah
-      processAILogbook(updated._id, updated.pengajuan_id, updated.deskripsi_kegiatan).catch(err => console.error("Background AI Error:", err));
+      try {
+        await processAILogbook(updated._id, updated.pengajuan_id, updated.deskripsi_kegiatan);
+      } catch (err) {
+        console.error("AI CPMK matching re-run error:", err);
+      }
     }
     
-    return NextResponse.json(updated);
+    const finalUpdated = await Logbook.findById(id);
+    return NextResponse.json(finalUpdated || updated);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -261,7 +273,7 @@ Contoh output jika cocok:
 Contoh output jika tidak ada yang cocok: { "matched": [], "skills": ["Observasi"] }
 Jangan tambahkan teks apapun selain object JSON tersebut.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -270,7 +282,8 @@ Jangan tambahkan teks apapun selain object JSON tersebut.`;
     let matchedData = [];
     let extractedSkills = [];
     try {
-      const parsedData = JSON.parse(textResult);
+      const cleanJson = textResult.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const parsedData = JSON.parse(cleanJson);
       if (parsedData.matched && Array.isArray(parsedData.matched)) {
         matchedData = parsedData.matched;
       } else if (Array.isArray(parsedData)) { // Fallback if AI still outputs array

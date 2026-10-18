@@ -79,7 +79,7 @@ Contoh output jika tidak ada yang cocok: []
 Jangan tambahkan teks apapun selain array JSON tersebut.`;
 
     // Initialize model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -87,7 +87,8 @@ Jangan tambahkan teks apapun selain array JSON tersebut.`;
     
     let matchedData = [];
     try {
-      matchedData = JSON.parse(textResult);
+      const cleanJson = textResult.replace(/```json/gi, '').replace(/```/g, '').trim();
+      matchedData = JSON.parse(cleanJson);
     } catch (e) {
       console.error("Gagal parse output AI:", textResult);
     }

@@ -134,7 +134,7 @@ export default function LogbookPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!pengajuan || pengajuan.status_pengajuan !== 'disetujui') return;
+    if (!pengajuan || pengajuan.status_pengajuan !== 'disetujui' || !pengajuan.is_dpl_confirmed) return;
     
     if (deskripsi.trim().split(/\s+/).length < 20) {
       alert("Deskripsi kegiatan terlalu singkat. Mohon tuliskan minimal 20 kata yang menjelaskan Situasi, Tugas, Aksi, dan Hasil (Metode STAR).");
@@ -263,8 +263,21 @@ export default function LogbookPage() {
             <div className="w-20 h-20 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">🔒</div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">Akses Logbook Terkunci</h2>
             <p className="text-slate-600 dark:text-slate-400">
-              Logbook Harian Anda akan terbuka **setelah** pengajuan magang Anda disetujui oleh Program Studi dan DPL ditugaskan.
+              Logbook Harian Anda akan terbuka <strong>setelah</strong> pengajuan magang Anda disetujui oleh Program Studi dan DPL ditugaskan.
             </p>
+          </div>
+        </div>
+      ) : !pengajuan.is_dpl_confirmed ? (
+        <div className="max-w-2xl mx-auto mt-10 animate-in zoom-in-95 duration-500">
+          <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+            <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">🤝</div>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">Menunggu Serah Terima Resmi</h2>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+              Pengajuan magang Anda di <strong>{pengajuan.detail_tempat?.nama || "Mitra Magang"}</strong> telah disetujui. Namun, pengisian logbook baru dapat dimulai <strong>setelah Dosen Pembimbing Lapangan (DPL) menyerahkan Anda ke Mentor Instansi</strong> secara resmi di sistem.
+            </p>
+            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs font-bold">
+              <span>ℹ️</span> Silakan koordinasi dengan DPL Anda untuk konfirmasi serah terima ke mentor lapangan.
+            </div>
           </div>
         </div>
       ) : (

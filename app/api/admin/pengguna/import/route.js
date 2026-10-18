@@ -2,10 +2,17 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function POST(req) {
   await dbConnect();
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user?.role !== 'admin_prodi') {
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+    }
+
     const payload = await req.json();
     
     if (!Array.isArray(payload.data)) {

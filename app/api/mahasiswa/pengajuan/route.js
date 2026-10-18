@@ -44,19 +44,41 @@ export async function POST(req) {
       file_cv_path = `/uploads/cv/${fileName}`;
     }
 
-    // Fallback required fields for existing schema
+    const User = (await import('@/models/User')).default;
+    
+    // Pemetaan Paket Matkul berdasarkan konsentrasi mahasiswa
     let paket_matkul_id = formData.get('paket_matkul_id');
     if (!paket_matkul_id) {
-      const paket = await PaketMatkul.findOne();
-      if (paket) paket_matkul_id = paket._id;
+      const mhsData = await User.findById(mahasiswa_id).select('konsentrasi program_studi');
+      if (mhsData?.konsentrasi) {
+        const matchedPaket = await PaketMatkul.findOne({
+          nama_paket: { $regex: new RegExp(mhsData.konsentrasi, 'i') },
+          jenis_skema: 'instansi'
+        });
+        if (matchedPaket) paket_matkul_id = matchedPaket._id;
+      }
+      if (!paket_matkul_id) {
+        const instansiPaket = await PaketMatkul.findOne({ jenis_skema: 'instansi' });
+        if (instansiPaket) paket_matkul_id = instansiPaket._id;
+      }
+      if (!paket_matkul_id) {
+        const anyPaket = await PaketMatkul.findOne();
+        if (anyPaket) paket_matkul_id = anyPaket._id;
+      }
     }
-    
-    const User = (await import('@/models/User')).default;
     
     // Update nomor_hp if provided
     if (nomor_hp) {
       await User.findByIdAndUpdate(mahasiswa_id, { nomor_hp });
     }
+
+    const Periode = (await import('@/models/Periode')).default;
+    const activePeriode = await Periode.findOne({ is_active: true });
+    const durasiBulan = activePeriode?.durasi_bulan || 4;
+
+    const tglMulai = new Date();
+    const tglSelesai = new Date();
+    tglSelesai.setMonth(tglSelesai.getMonth() + durasiBulan);
 
     const pengajuan = await PengajuanMagang.create({
       mahasiswa_id,
@@ -70,8 +92,8 @@ export async function POST(req) {
         alamat: mitra_alamat || 'Alamat Mitra',
         posisi: posisi_nama || 'Posisi Magang'
       },
-      tanggal_mulai: new Date(),
-      tanggal_selesai: new Date(new Date().setMonth(new Date().getMonth() + 4)),
+      tanggal_mulai: tglMulai,
+      tanggal_selesai: tglSelesai,
       status_pengajuan: 'menunggu',
       tanggal_pengajuan: new Date()
     });
