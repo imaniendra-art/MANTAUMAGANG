@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3020",
     "lint": "eslint",
-    "clean:transactions": "node --env-file=.env.local scripts/clean-transactions.js"
+    "clean:transactions": "node --env-file=.env.local scripts/clean-transactions.js",
+    "update:server": "git pull origin main && npm install && npm run build && pm2 restart mantaumagang"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1088.0",
