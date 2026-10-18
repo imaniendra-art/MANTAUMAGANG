@@ -161,14 +161,18 @@ export default function MasterData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+      const data = await res.json();
       if (res.ok) {
         setShowMitraModal(false);
         setMitraForm({ id: null, nama_instansi: "", jenis_skema: "Corporate", alamat: "", deskripsi_mitra: "" });
         showToast(mitraForm.id ? "Data Mitra berhasil diperbarui!" : "Data Mitra berhasil disimpan!");
         fetchData();
+      } else {
+        alert(data.error || "Gagal menyimpan data mitra.");
       }
     } catch (error) {
       console.error(error);
+      alert("Terjadi kesalahan jaringan atau server.");
     }
   };
 
@@ -212,13 +216,19 @@ export default function MasterData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+      const data = await res.json();
       if (res.ok) {
         setShowPosisiFormModal(false);
         setPosisiForm({ id: null, nama_posisi: "", konsentrasi: "SDM", kuota: 1, deskripsi_pekerjaan: "", kriteria_kandidat: "", sistem_kerja: "WFO" });
         showToast(posisiForm.id ? "Posisi berhasil diperbarui!" : "Posisi berhasil ditambahkan!");
         fetchPosisi(selectedMitraForPosisi._id);
+      } else {
+        alert(data.error || "Gagal menyimpan data posisi.");
       }
-    } catch (error) { console.error(error); }
+    } catch (error) { 
+      console.error(error); 
+      alert("Terjadi kesalahan jaringan atau server.");
+    }
   };
 
   const handleDeletePosisi = async (id) => {
@@ -685,7 +695,11 @@ export default function MasterData() {
                           <td className="py-4 px-6 text-center text-slate-500 dark:text-slate-400 font-medium">{indexOfFirstMitra + index + 1}</td>
                           <td className="py-4 px-6">
                             <div className="font-semibold text-slate-800 dark:text-slate-100">{mitra.nama_instansi}</div>
-                            <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold capitalize ${mitra.jenis_skema === 'corporate' ? 'bg-blue-50 text-blue-600' : mitra.jenis_skema === 'wirausaha' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
+                            <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold capitalize ${
+                              mitra.jenis_skema?.toLowerCase() === 'corporate' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' : 
+                              mitra.jenis_skema?.toLowerCase() === 'wirausaha' ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300' : 
+                              'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300'
+                            }`}>
                               {mitra.kategori || mitra.jenis_skema}
                             </span>
                           </td>
@@ -709,7 +723,7 @@ export default function MasterData() {
                           </td>
                           <td className="py-4 px-6 text-right">
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => { setMitraForm({ id: mitra._id, nama_instansi: mitra.nama_instansi, jenis_skema: mitra.jenis_skema === 'wirausaha' ? 'Wirausaha' : mitra.jenis_skema === 'Pemerintahan' ? 'Pemerintahan' : 'Corporate', alamat: mitra.alamat, deskripsi_mitra: mitra.deskripsi_mitra || "" }); setShowMitraModal(true); }} className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Edit</button>
+                              <button onClick={() => { setMitraForm({ id: mitra._id, nama_instansi: mitra.nama_instansi, jenis_skema: mitra.jenis_skema?.toLowerCase() === 'wirausaha' ? 'Wirausaha' : mitra.jenis_skema?.toLowerCase() === 'pemerintahan' ? 'Pemerintahan' : 'Corporate', alamat: mitra.alamat, deskripsi_mitra: mitra.deskripsi_mitra || "" }); setShowMitraModal(true); }} className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Edit</button>
                               <button onClick={() => handleDeleteMitra(mitra._id)} className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Hapus</button>
                               <button onClick={() => handleOpenKelolaPosisi(mitra)} className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors">Kelola Posisi</button>
                             </div>
@@ -1015,11 +1029,22 @@ export default function MasterData() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Jenis Skema</label>
-                  <select value={mitraForm.jenis_skema} onChange={(e) => setMitraForm({...mitraForm, jenis_skema: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800/80 appearance-none">
-                    <option value="Corporate">Corporate / Perusahaan</option>
-                    <option value="Wirausaha">Wirausaha / BUMDes</option>
-                    <option value="Pemerintahan">Pemerintahan</option>
-                  </select>
+                  <div className="relative">
+                    <select 
+                      value={mitraForm.jenis_skema} 
+                      onChange={(e) => setMitraForm({...mitraForm, jenis_skema: e.target.value})} 
+                      className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 appearance-none cursor-pointer"
+                    >
+                      <option value="Corporate">Corporate / Perusahaan</option>
+                      <option value="Wirausaha">Wirausaha / BUMDes</option>
+                      <option value="Pemerintahan">Pemerintahan</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Alamat Lengkap</label>

@@ -3,9 +3,18 @@ import mongoose from 'mongoose';
 const MitraMagangSchema = new mongoose.Schema({
   nama_instansi: { type: String, required: true },
   alamat: { type: String, required: true },
-  jenis_skema: { type: String, enum: ['corporate', 'wirausaha', 'Pemerintahan'], required: true },
+  jenis_skema: { 
+    type: String, 
+    enum: ['corporate', 'wirausaha', 'pemerintahan', 'Pemerintahan'], 
+    lowercase: true, 
+    required: true 
+  },
   file_mou_url: { type: String, required: false },
   deskripsi_mitra: { type: String, required: false },
 }, { timestamps: true });
+
+if (mongoose.models.MitraMagang) {
+  delete mongoose.models.MitraMagang;
+}
 
 export default mongoose.models.MitraMagang || mongoose.model('MitraMagang', MitraMagangSchema);
