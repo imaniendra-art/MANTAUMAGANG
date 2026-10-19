@@ -622,7 +622,7 @@ export default function LogbookPage() {
                           ))}
                           
                           {/* Backward compatibility: jika ada bukti_kegiatan tapi tidak ada array dokumentasi */}
-                          {(!log.dokumentasi || log.dokumentasi.length === 0) && log.bukti_kegiatan && log.bukti_kegiatan.startsWith('data:image') && (
+                          {(!log.dokumentasi || log.dokumentasi.length === 0) && log.bukti_kegiatan && (
                             <a href={log.bukti_kegiatan} target="_blank" rel="noopener noreferrer" className="group relative w-20 h-20 shrink-0 cursor-pointer">
                               <img src={log.bukti_kegiatan} alt="Bukti Kegiatan Lama" className="w-full h-full object-cover rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm" />
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center p-1 transition-opacity">

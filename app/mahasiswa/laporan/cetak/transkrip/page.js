@@ -25,12 +25,8 @@ export default function CetakTranskrip() {
   if (!data) return <div className="p-10 text-center">Memuat Dokumen SKPI...</div>;
 
   const { laporan, pengajuan } = data;
-  const mhs = session.user;
+  const mhs = data?.pengajuan?.mahasiswa_id || session?.user;
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
-  
-  // URL validasi untuk QR Code
-  const verifyUrl = `http://localhost:3020/verify/${laporan._id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
 
   const transkrip = pengajuan.transkrip_final || [];
   const isDinilai = transkrip.length > 0;

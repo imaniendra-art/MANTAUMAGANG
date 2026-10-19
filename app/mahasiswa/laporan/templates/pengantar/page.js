@@ -126,6 +126,10 @@ export default function CetakPengantar() {
     }
   }
 
+  const daftarPeserta = (data?.pengajuan?.peserta_grup && data.pengajuan.peserta_grup.length > 0)
+    ? data.pengajuan.peserta_grup
+    : (data?.pengajuan ? [data.pengajuan] : []);
+
   return (
     <div className="bg-slate-200 min-h-screen font-serif text-black text-[11pt]">
       <style jsx global>{`
@@ -219,7 +223,7 @@ export default function CetakPengantar() {
 
         </div>
 
-        {data?.pengajuan?.peserta_grup && data.pengajuan.peserta_grup.length > 0 && (
+        {daftarPeserta.length > 0 && (
           <div className="p-[2.5cm] min-h-[29.7cm] print:pt-[2cm] print:pr-[2cm] print:pb-[2.5cm] print:pl-[2.5cm] print:min-h-0 page-break-before-always" style={{ pageBreakBefore: 'always' }}>
             <h3 className="text-center font-bold mb-6 underline">LAMPIRAN SURAT PENGANTAR MAGANG</h3>
             <div className="mb-4">
@@ -251,7 +255,7 @@ export default function CetakPengantar() {
                 </tr>
               </thead>
               <tbody>
-                {data.pengajuan.peserta_grup.map((p, idx) => (
+                {daftarPeserta.map((p, idx) => (
                   <tr key={p._id}>
                     <td className="border border-black p-2 text-center">{idx + 1}</td>
                     <td className="border border-black p-2 font-bold">{p.mahasiswa_id?.nama_lengkap}</td>

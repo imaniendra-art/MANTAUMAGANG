@@ -22,7 +22,7 @@ export default function CetakKeterangan() {
   if (!data) return <div className="p-10 text-center">Memuat dokumen...</div>;
 
   const { pengajuan } = data;
-  const mhs = session.user;
+  const mhs = data?.pengajuan?.mahasiswa_id || session?.user;
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
   const alamatMitra = pengajuan.detail_tempat?.alamat || ".......................................................";
 
@@ -57,12 +57,12 @@ export default function CetakKeterangan() {
                 <tr>
                   <td className="w-48 align-top">Nama</td>
                   <td className="w-4 align-top">:</td>
-                  <td>.......................................................</td>
+                  <td className="font-bold">{pengajuan.mentor_id?.nama_lengkap || "......................................................."}</td>
                 </tr>
                 <tr>
                   <td className="align-top">Jabatan</td>
                   <td className="align-top">:</td>
-                  <td>.......................................................</td>
+                  <td>Mentor Industri / Pembimbing Lapangan</td>
                 </tr>
                 <tr>
                   <td className="align-top">Instansi/Perusahaan</td>
@@ -88,7 +88,7 @@ export default function CetakKeterangan() {
                 <tr>
                   <td className="align-top">Program Studi</td>
                   <td className="align-top">:</td>
-                  <td>Manajemen</td>
+                  <td>{mhs.program_studi || "Manajemen"}</td>
                 </tr>
                 <tr>
                   <td className="align-top">Perguruan Tinggi</td>
@@ -99,7 +99,7 @@ export default function CetakKeterangan() {
             </table>
 
             <p>
-              Telah melaksanakan dan menyelesaikan program <strong>Magang Berdampak</strong> di <strong>{mitra}</strong> pada bagian/divisi ..................................................... sejak tanggal <strong>{new Date(pengajuan.tanggal_mulai).toLocaleDateString('id-ID')}</strong> sampai dengan tanggal <strong>{new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</strong>.
+              Telah melaksanakan dan menyelesaikan program <strong>Magang Berdampak</strong> di <strong>{mitra}</strong> pada bagian/divisi <strong>{pengajuan.detail_tempat?.posisi || pengajuan.posisi_id?.nama_posisi || "....................................................."}</strong> sejak tanggal <strong>{new Date(pengajuan.tanggal_mulai).toLocaleDateString('id-ID')}</strong> sampai dengan tanggal <strong>{new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</strong>.
             </p>
             <p>
               Selama mengikuti program magang, yang bersangkutan telah menunjukkan kedisiplinan, tanggung jawab, dan kinerja yang baik serta tidak pernah melakukan tindakan pelanggaran tata tertib perusahaan.
@@ -114,8 +114,8 @@ export default function CetakKeterangan() {
               <p>................., ............................</p>
               <p className="font-bold">{mitra}</p>
               <p className="mb-24 mt-2">(Stempel & Tanda Tangan)</p>
-              <p className="font-bold underline">(..................................................)</p>
-              <p>Pimpinan / HRD</p>
+              <p className="font-bold underline">({pengajuan.mentor_id?.nama_lengkap || ".................................................."})</p>
+              <p>Pimpinan / Mentor Lapangan</p>
             </div>
           </div>
 

@@ -21,8 +21,9 @@ export default function CetakSertifikatMitra() {
 
   if (!data) return <div className="p-10 text-center">Memuat Sertifikat...</div>;
 
-  const { laporan, pengajuan } = data;
+  const { laporan, pengajuan, config } = data;
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
+  const ketuaInstitusi = config?.nama_ketua_institusi || 'Dr. Ibrahim Syah, S.E.,M.M';
 
   return (
     <div className="bg-slate-200 min-h-screen font-sans text-slate-800 flex items-center justify-center p-8 print:p-0 print:bg-white">
@@ -75,7 +76,7 @@ export default function CetakSertifikatMitra() {
                 Indonesia YAPMI Makassar,
               </p>
               <div className="border-b border-slate-800 w-full mb-2"></div>
-              <p className="font-bold text-slate-800">Dr. Ibrahim Syah, S.E.,M.M</p>
+              <p className="font-bold text-slate-800">{ketuaInstitusi}</p>
             </div>
           </div>
 

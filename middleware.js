@@ -11,10 +11,8 @@ export default withAuth(
     }
 
     if (path.startsWith('/mahasiswa') && token.role !== 'mahasiswa') {
-      if (token.role === 'dpl' && (path.startsWith('/mahasiswa/laporan/cetak/laporan') || path.startsWith('/mahasiswa/laporan/templates/pengantar'))) {
-        // allow DPL to view
-      } else if (token.role === 'admin_prodi' && path.startsWith('/mahasiswa/laporan/templates/pengantar')) {
-        // allow Admin to view
+      if ((token.role === 'dpl' || token.role === 'admin_prodi') && (path.startsWith('/mahasiswa/laporan/cetak') || path.startsWith('/mahasiswa/laporan/templates'))) {
+        // allow DPL and Admin to view print & template pages
       } else {
         return NextResponse.redirect(new URL('/login', req.url));
       }

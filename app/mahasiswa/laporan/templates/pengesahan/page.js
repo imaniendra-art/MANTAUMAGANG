@@ -84,14 +84,14 @@ export default function CetakPengesahan() {
             <div className="w-1/2">
               <p>Menyetujui,</p>
               <p className="mb-24">Dosen Pembimbing Lapangan</p>
-              <p className="font-bold underline">(..................................................)</p>
-              <p>NIDN. {pengajuan?.dpl_id?.nidn || "......................"}</p>
+              <p className="font-bold underline">({pengajuan?.dpl_id?.nama_lengkap || ".................................................."})</p>
+              <p>NIDN. {pengajuan?.dpl_id?.nidn || pengajuan?.dpl_id?.nim_nidn || "......................"}</p>
             </div>
             <div className="w-1/2">
               <p>Makassar, ............................</p>
               <p className="mb-24">Mentor Perusahaan</p>
-              <p className="font-bold underline">(..................................................)</p>
-              <p>NIP/NIK. </p>
+              <p className="font-bold underline">({pengajuan?.mentor_id?.nama_lengkap || ".................................................."})</p>
+              <p>NIP/NIK. {pengajuan?.mentor_id?.nim_nidn || "......................"}</p>
             </div>
           </div>
           

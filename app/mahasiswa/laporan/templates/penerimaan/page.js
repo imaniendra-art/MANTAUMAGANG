@@ -22,7 +22,7 @@ export default function CetakPenerimaan() {
   if (!data) return <div className="p-10 text-center">Memuat dokumen...</div>;
 
   const { pengajuan } = data;
-  const mhs = session.user;
+  const mhs = data?.pengajuan?.mahasiswa_id || session?.user;
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
   const alamatMitra = pengajuan.detail_tempat?.alamat || ".......................................................";
 
@@ -99,13 +99,13 @@ export default function CetakPenerimaan() {
                 <tr>
                   <td className="align-top">Program Studi</td>
                   <td className="align-top">:</td>
-                  <td>Manajemen</td>
+                  <td>{mhs.program_studi || "Manajemen"}</td>
                 </tr>
               </tbody>
             </table>
 
             <p>
-              Kegiatan magang akan dilaksanakan mulai tanggal <strong>{new Date(pengajuan.tanggal_mulai).toLocaleDateString('id-ID')}</strong> sampai dengan <strong>{new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</strong>. Selama pelaksanaannya, mahasiswa tersebut akan ditempatkan di bagian/divisi .................................................... dan dibimbing oleh mentor perusahaan.
+              Kegiatan magang akan dilaksanakan mulai tanggal <strong>{new Date(pengajuan.tanggal_mulai).toLocaleDateString('id-ID')}</strong> sampai dengan <strong>{new Date(pengajuan.tanggal_selesai).toLocaleDateString('id-ID')}</strong>. Selama pelaksanaannya, mahasiswa tersebut akan ditempatkan di bagian/divisi <strong>{pengajuan.detail_tempat?.posisi || pengajuan.posisi_id?.nama_posisi || "...................................................."}</strong> dan dibimbing oleh mentor perusahaan.
             </p>
             <p>
               Demikian surat balasan penerimaan magang ini kami sampaikan agar dapat dipergunakan sebagaimana mestinya. Atas kerja sama yang baik kami ucapkan terima kasih.
@@ -116,8 +116,8 @@ export default function CetakPenerimaan() {
             <div className="w-1/2">
               <p>Hormat Kami,</p>
               <p className="mb-24 mt-2">(Stempel & Tanda Tangan)</p>
-              <p className="font-bold underline">(..................................................)</p>
-              <p>Pimpinan / HRD</p>
+              <p className="font-bold underline">({pengajuan.mentor_id?.nama_lengkap || ".................................................."})</p>
+              <p>Pimpinan / Mentor Lapangan</p>
             </div>
           </div>
 

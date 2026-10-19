@@ -27,7 +27,7 @@ export default function CetakSertifikatMahasiswa() {
   if (!data) return <div className="p-10 text-center">Memuat Sertifikat...</div>;
 
   const { laporan, pengajuan, config } = data;
-  const mhs = session.user;
+  const mhs = data?.pengajuan?.mahasiswa_id || session?.user;
   const mitra = pengajuan.mitra_id?.nama_perusahaan || pengajuan.detail_tempat?.nama;
 
   const ketuaInstitusi = config?.nama_ketua_institusi || 'Dr. Ibrahim Syah, S.E.,M.M';
