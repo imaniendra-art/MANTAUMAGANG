@@ -24,7 +24,7 @@ export async function GET(req) {
       const logs = await Logbook.find({ 
         pengajuan_id: p._id, 
         status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl'] } 
-      }).select('nilai_otomatis matched_indicators extracted_skills');
+      }).select('nilai_otomatis matched_indicators extracted_skills').lean();
       
       let total = 0;
       let count = logs.length;
@@ -101,7 +101,7 @@ export async function PATCH(req) {
     const logs = await Logbook.find({ 
       pengajuan_id: id, 
       status_validasi: { $in: ['divalidasi_mentor', 'divalidasi_dpl'] } 
-    });
+    }).lean();
 
     // Kumpulkan semua indikator yang pernah diceklis dari logbook
     const allMatched = [];

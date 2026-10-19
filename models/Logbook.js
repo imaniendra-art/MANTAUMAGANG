@@ -60,5 +60,11 @@ const LogbookSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// Indeks Majemuk untuk akselerasi query ribuan logbook mahasiswa
+LogbookSchema.index({ mahasiswa_id: 1, tanggal: -1 });
+LogbookSchema.index({ pengajuan_id: 1, status_validasi: 1 });
+LogbookSchema.index({ status_validasi: 1, tanggal: 1 });
+LogbookSchema.index({ ai_status: 1 });
+
 delete mongoose.models.Logbook;
 export default mongoose.models.Logbook || mongoose.model('Logbook', LogbookSchema);

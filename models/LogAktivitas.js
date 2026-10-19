@@ -21,4 +21,7 @@ const LogAktivitasSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+LogAktivitasSchema.index({ createdAt: -1 });
+LogAktivitasSchema.index({ mahasiswa_id: 1, createdAt: -1 });
+
 export default mongoose.models.LogAktivitas || mongoose.model('LogAktivitas', LogAktivitasSchema);

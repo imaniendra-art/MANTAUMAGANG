@@ -54,6 +54,9 @@ const UserSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+UserSchema.index({ role: 1 });
+UserSchema.index({ magic_token: 1 }, { sparse: true });
+
 if (mongoose.models.User) {
   delete mongoose.models.User;
 }

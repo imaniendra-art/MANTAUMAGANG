@@ -107,7 +107,8 @@ export async function GET(req) {
         .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
         .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
         .populate('mitra_id')
-        .populate('mahasiswa_id');
+        .populate('mahasiswa_id')
+        .lean();
         
       if (!pengajuan) {
         return NextResponse.json(null);
@@ -133,12 +134,12 @@ export async function GET(req) {
       const peserta = await PengajuanMagang.find(query)
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi konsentrasi' })
         .populate({ path: 'dpl_id', select: 'nama_lengkap nidn nim_nidn' })
-        .sort({ createdAt: 1 });
+        .sort({ createdAt: 1 })
+        .lean();
 
-      const responseData = pengajuan.toObject();
-      responseData.peserta_grup = peserta;
+      pengajuan.peserta_grup = peserta;
 
-      return NextResponse.json(responseData);
+      return NextResponse.json(pengajuan);
     }
     
     // Tarik semua pengajuan berdasarkan status untuk Admin (default: menunggu)
@@ -155,7 +156,8 @@ export async function GET(req) {
           populate: { path: 'mitra_id', select: 'nama_instansi' }
         })
         .populate({ path: 'mitra_id', select: 'nama_instansi' })
-        .sort({ createdAt: 1 });
+        .sort({ createdAt: 1 })
+        .lean();
         
       return NextResponse.json(pengajuans);
     }
@@ -168,7 +170,8 @@ export async function GET(req) {
         .populate({ path: 'mentor_id', select: 'nama_lengkap nomor_hp nim_nidn nidn' })
         .populate({ path: 'posisi_id', populate: { path: 'mitra_id' } })
         .populate('mitra_id')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .lean();
       return NextResponse.json(pengajuan || null);
     }
     

@@ -20,7 +20,9 @@ export async function GET(req) {
     
     // Tarik logbook khusus 1 mahasiswa
     if (mhsId) {
-      const logs = await Logbook.find({ mahasiswa_id: mhsId }).sort({ tanggal: -1, createdAt: -1 });
+      const logs = await Logbook.find({ mahasiswa_id: mhsId })
+        .sort({ tanggal: -1, createdAt: -1 })
+        .lean();
       return NextResponse.json(logs);
     }
 
@@ -29,7 +31,8 @@ export async function GET(req) {
       const logs = await Logbook.find({})
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn program_studi' })
         .populate({ path: 'pengajuan_id', select: 'detail_tempat posisi_id', populate: { path: 'posisi_id mitra_id' } })
-        .sort({ tanggal: -1 });
+        .sort({ tanggal: -1 })
+        .lean();
       return NextResponse.json(logs);
     }
 
@@ -42,7 +45,7 @@ export async function GET(req) {
       const mentorIds = [mentorObjectId];
       if (userId === '6a60e47d9cd0a0e9b0334840') mentorIds.push(new mongoose.Types.ObjectId('6a60d90a317d1e8f2197d1e3'));
 
-      const pengajuans = await PengajuanMagang.find({ mentor_id: { $in: mentorIds } }).select('_id');
+      const pengajuans = await PengajuanMagang.find({ mentor_id: { $in: mentorIds } }).select('_id').lean();
       const pengajuanIds = pengajuans.map(p => p._id);
 
       const logs = await Logbook.find({ 
@@ -51,7 +54,8 @@ export async function GET(req) {
       })
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
         .populate({ path: 'pengajuan_id', select: 'detail_tempat' })
-        .sort({ tanggal: 1 });
+        .sort({ tanggal: 1 })
+        .lean();
       return NextResponse.json(logs);
     }
 
@@ -64,7 +68,7 @@ export async function GET(req) {
       const mentorIds = [mentorObjectId];
       if (userId === '6a60e47d9cd0a0e9b0334840') mentorIds.push(new mongoose.Types.ObjectId('6a60d90a317d1e8f2197d1e3'));
 
-      const pengajuans = await PengajuanMagang.find({ mentor_id: { $in: mentorIds } }).select('_id');
+      const pengajuans = await PengajuanMagang.find({ mentor_id: { $in: mentorIds } }).select('_id').lean();
       const pengajuanIds = pengajuans.map(p => p._id);
 
       const logs = await Logbook.find({ 
@@ -73,20 +77,22 @@ export async function GET(req) {
       })
         .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
         .populate({ path: 'pengajuan_id', select: 'detail_tempat' })
-        .sort({ tanggal: -1 });
+        .sort({ tanggal: -1 })
+        .lean();
       return NextResponse.json(logs);
     }
 
     // DPL: Tarik logbook yang sudah di-acc mentor, KHUSUS untuk mhs bimbingannya
     if (role === 'dpl' && userId) {
-      const pengajuans = await PengajuanMagang.find({ dpl_id: userId }).select('_id');
+      const pengajuans = await PengajuanMagang.find({ dpl_id: userId }).select('_id').lean();
       const pengajuanIds = pengajuans.map(p => p._id);
 
       const logs = await Logbook.find({ 
         pengajuan_id: { $in: pengajuanIds }
       })
       .populate({ path: 'mahasiswa_id', select: 'nama_lengkap nim_nidn' })
-      .sort({ tanggal: 1 });
+      .sort({ tanggal: 1 })
+      .lean();
 
       return NextResponse.json(logs);
     }
@@ -214,10 +220,10 @@ async function processAILogbook(logbookId, pengajuanId, deskripsi_kegiatan) {
     if (!process.env.GEMINI_API_KEY) return;
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    const pengajuan = await PengajuanMagang.findById(pengajuanId);
+    const pengajuan = await PengajuanMagang.findById(pengajuanId).select('paket_matkul_id').lean();
     if (!pengajuan || !pengajuan.paket_matkul_id) return;
 
-    const paket = await PaketMatkul.findById(pengajuan.paket_matkul_id);
+    const paket = await PaketMatkul.findById(pengajuan.paket_matkul_id).lean();
     if (!paket) return;
 
     // Extract all possible indicators

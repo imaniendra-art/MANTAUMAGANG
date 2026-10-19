@@ -40,5 +40,6 @@ const AbsensiSchema = new mongoose.Schema({
 
 // Ensure only 1 absensi per student per day
 AbsensiSchema.index({ mahasiswa_id: 1, tanggal: 1 }, { unique: true });
+AbsensiSchema.index({ pengajuan_id: 1, tanggal: -1 });
 
 export default mongoose.models.Absensi || mongoose.model('Absensi', AbsensiSchema);

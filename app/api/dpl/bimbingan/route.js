@@ -30,7 +30,8 @@ export async function GET(req) {
         populate: { path: 'mitra_id' }
       })
       .populate('mentor_id', 'nama_lengkap nomor_hp email magic_token')
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 })
+      .lean();
 
     return NextResponse.json(bimbinganList);
   } catch (error) {

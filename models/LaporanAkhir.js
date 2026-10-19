@@ -30,6 +30,9 @@ const LaporanAkhirSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+LaporanAkhirSchema.index({ mahasiswa_id: 1 });
+LaporanAkhirSchema.index({ pengajuan_id: 1 });
+
 // Hapus model lama dari cache agar enum baru terbaca di Next.js dev server
 if (mongoose.models.LaporanAkhir) {
   delete mongoose.models.LaporanAkhir;

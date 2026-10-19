@@ -84,4 +84,11 @@ const PengajuanMagangSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Indeks Majemuk untuk akselerasi query pengajuan magang
+PengajuanMagangSchema.index({ mahasiswa_id: 1 });
+PengajuanMagangSchema.index({ dpl_id: 1, status_pengajuan: 1 });
+PengajuanMagangSchema.index({ mentor_id: 1, status_pengajuan: 1 });
+PengajuanMagangSchema.index({ status_pengajuan: 1, createdAt: 1 });
+PengajuanMagangSchema.index({ paket_matkul_id: 1 });
+
 export default mongoose.models.PengajuanMagang || mongoose.model('PengajuanMagang', PengajuanMagangSchema);

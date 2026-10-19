@@ -19,7 +19,7 @@ export async function GET(req) {
       query.tanggal = tanggal;
     }
 
-    const absensi = await Absensi.find(query).sort({ tanggal: -1 });
+    const absensi = await Absensi.find(query).sort({ tanggal: -1 }).lean();
     return NextResponse.json(absensi);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -39,7 +39,7 @@ export async function POST(req) {
     const existing = await Absensi.findOne({
       mahasiswa_id: body.mahasiswa_id,
       tanggal: body.tanggal
-    });
+    }).select('_id').lean();
 
     if (existing) {
       return NextResponse.json({ error: "Anda sudah melakukan absen untuk hari ini." }, { status: 400 });
