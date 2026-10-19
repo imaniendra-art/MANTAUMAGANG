@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useSession } from "next-auth/react";
 import LogbookCalendar from "@/components/LogbookCalendar";
+import { compressImage } from "@/lib/client-compress";
 
 export default function LogbookPage() {
   const { data: session } = useSession();
@@ -53,6 +54,7 @@ export default function LogbookPage() {
   const [dokumentasi, setDokumentasi] = useState([]); // Array of { file: base64, keterangan: string }
   const [editingLogId, setEditingLogId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [compressingPhoto, setCompressingPhoto] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [achievementToast, setAchievementToast] = useState(null);
   const [showMisi, setShowMisi] = useState(false); // State for Accordion Misi Magang
@@ -104,23 +106,32 @@ export default function LogbookPage() {
   };
 
 
-  const handleAddDokumentasi = (e) => {
+  const handleAddDokumentasi = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (dokumentasi.length >= 3) {
         alert("Maksimal 3 foto dokumentasi tambahan.");
-        return;
-      }
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran file maksimal 2MB");
         e.target.value = null;
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setDokumentasi(prev => [...prev, { file: reader.result, keterangan: "" }]);
-      };
-      reader.readAsDataURL(file);
+      if (file.size > 15 * 1024 * 1024) {
+        alert("Ukuran file foto maksimal 15MB");
+        e.target.value = null;
+        return;
+      }
+      try {
+        setCompressingPhoto(true);
+        const compressedDataUrl = await compressImage(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.75 });
+        if (compressedDataUrl) {
+          setDokumentasi(prev => [...prev, { file: compressedDataUrl, keterangan: "" }]);
+        }
+      } catch (err) {
+        console.error("Gagal kompresi foto:", err);
+        alert("Gagal memproses foto. Silakan coba kembali.");
+      } finally {
+        setCompressingPhoto(false);
+        e.target.value = null;
+      }
     }
   };
 
@@ -384,9 +395,18 @@ export default function LogbookPage() {
                       Dokumentasi Kegiatan <span className="text-red-500">*</span> <span className="text-xs font-normal text-slate-500">(Wajib min 1, Maks 3 Foto)</span>
                     </label>
                     {dokumentasi.length < 3 && (
-                      <label className="cursor-pointer text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-                        + Tambah Foto
-                        <input type="file" accept="image/*" className="hidden" onChange={handleAddDokumentasi} />
+                      <label className={`cursor-pointer text-xs font-bold ${compressingPhoto ? 'opacity-50 pointer-events-none' : ''} text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5`}>
+                        {compressingPhoto ? (
+                          <>
+                            <span className="animate-spin text-[10px]">⏳</span>
+                            <span>Mengompres...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>+ Tambah Foto</span>
+                          </>
+                        )}
+                        <input type="file" accept="image/*" disabled={compressingPhoto} className="hidden" onChange={handleAddDokumentasi} />
                       </label>
                     )}
                   </div>

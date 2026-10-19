@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
+import { compressImage } from '@/lib/client-compress';
 
 export default function LaporanAkhirPage() {
   const { data: session } = useSession();
@@ -180,19 +181,21 @@ export default function LaporanAkhirPage() {
     setIsSaving(false);
   };
 
-  const handleFileChange = (e, field) => {
+  const handleFileChange = async (e, field) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran file maksimal 2MB");
+      if (file.size > 15 * 1024 * 1024) {
+        alert("Ukuran file maksimal 15MB");
         e.target.value = null;
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, [field]: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImage(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.75 });
+        setFormData(prev => ({ ...prev, [field]: compressed }));
+      } catch (err) {
+        console.error("Gagal memproses file:", err);
+        alert("Gagal memproses file.");
+      }
     }
   };
 

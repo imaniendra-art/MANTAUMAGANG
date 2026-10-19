@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Clock, CheckCircle2, XCircle } from "lucide-react";
+import { compressImage } from "@/lib/client-compress";
 
 import { Suspense } from "react";
 
@@ -31,6 +32,7 @@ function MahasiswaDashboardContent() {
   const [alasan, setAlasan] = useState("");
   const [fotoBukti, setFotoBukti] = useState("");
   const [submittingAbsensi, setSubmittingAbsensi] = useState(false);
+  const [compressingAbsensi, setCompressingAbsensi] = useState(false);
 
   useEffect(() => {
     // Cek parameter success untuk notifikasi pengajuan
@@ -147,19 +149,24 @@ function MahasiswaDashboardContent() {
     }
   }, [analisis]);
 
-  const handleFileAbsensiChange = (e) => {
+  const handleFileAbsensiChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran foto maksimal 2MB");
+      if (file.size > 15 * 1024 * 1024) {
+        alert("Ukuran foto maksimal 15MB");
         e.target.value = null;
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFotoBukti(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setCompressingAbsensi(true);
+        const compressed = await compressImage(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.75 });
+        setFotoBukti(compressed || "");
+      } catch (err) {
+        console.error("Gagal kompresi foto absensi:", err);
+        alert("Gagal memproses foto. Silakan coba kembali.");
+      } finally {
+        setCompressingAbsensi(false);
+      }
     } else {
       setFotoBukti("");
     }
