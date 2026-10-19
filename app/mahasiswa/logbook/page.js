@@ -69,9 +69,9 @@ export default function LogbookPage() {
     setExpandedPhotos(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (showLoading = true) => {
     if (!session?.user?.id) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const resP = await fetch(`/api/pengajuan?mhsId=${session.user.id}`);
       const dataP = await resP.json();
@@ -89,20 +89,29 @@ export default function LogbookPage() {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [session]);
 
   useEffect(() => {
-    const load = async () => {
-      await fetchData();
-    };
-    load();
+    fetchData(true);
   }, [fetchData]);
+
+  // Polling latar belakang otomatis jika ada logbook yang AI-nya masih diproses
+  useEffect(() => {
+    const hasProcessing = logbooks.some(l => l.ai_status === 'processing');
+    if (!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      fetchData(false);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [logbooks, fetchData]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 3000);
+    setTimeout(() => setToastMessage(""), 4000);
   };
 
 
@@ -202,8 +211,8 @@ export default function LogbookPage() {
         setDokumentasi([]);
         setEditingLogId(null);
         
-        fetchData();
-        showToast("Logbook berhasil disimpan.");
+        fetchData(false);
+        showToast("✅ Logbook berhasil disimpan! AI sedang mencocokkan target CPMK...");
       } else {
         const err = await res.json();
         alert("Gagal: " + err.error);
@@ -550,7 +559,13 @@ export default function LogbookPage() {
                           onClick={() => toggleCpmk(log._id)}
                           className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors shadow-sm cursor-pointer"
                         >
-                          <span>🎯</span> Capaian
+                          {log.ai_status === 'processing' ? (
+                            <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold animate-pulse">
+                              <span className="animate-spin text-[10px]">⚙️</span> Menganalisis...
+                            </span>
+                          ) : (
+                            <span>🎯 Capaian</span>
+                          )}
                         </button>
                         {(log.dokumentasi?.length > 0 || log.bukti_kegiatan) && (
                           <button 
@@ -621,7 +636,19 @@ export default function LogbookPage() {
                     
                     {expandedCpmk[log._id] && (
                       <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {log.matched_indicators && log.matched_indicators.length > 0 ? (
+                        {log.ai_status === 'processing' ? (
+                          <div className="bg-indigo-50 dark:bg-indigo-950/30 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800/50 flex items-center gap-3 w-full animate-pulse">
+                            <span className="text-2xl animate-spin">⚙️</span>
+                            <div>
+                              <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                                AI Sedang Menganalisis Capaian CPMK...
+                              </p>
+                              <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                Hasil analisis dan poin kompetensi akan muncul otomatis di sini dalam hitungan detik.
+                              </p>
+                            </div>
+                          </div>
+                        ) : log.matched_indicators && log.matched_indicators.length > 0 ? (
                             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 w-full">
                               <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                 <span>🎯</span> {log.matched_indicators.length} Target CPMK Terpenuhi

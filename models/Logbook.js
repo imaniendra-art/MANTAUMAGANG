@@ -53,6 +53,11 @@ const LogbookSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  ai_status: {
+    type: String,
+    enum: ['processing', 'completed', 'failed'],
+    default: 'completed',
+  },
 }, { timestamps: true });
 
 delete mongoose.models.Logbook;

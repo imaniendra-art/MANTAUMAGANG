@@ -128,19 +128,18 @@ export async function POST(req) {
       }
     }
 
+    data.ai_status = data.deskripsi_kegiatan ? 'processing' : 'completed';
     const newLog = await Logbook.create(data);
 
-    // Jalankan analisis semantik AI Gemini untuk mencocokkan CPMK
+    // Jalankan analisis semantik AI Gemini di latar belakang (Non-blocking / Fire-and-Forget)
+    // Mahasiswa langsung menerima respon sukses <200ms tanpa tertahan oleh panggilan AI Google
     if (data.deskripsi_kegiatan) {
-      try {
-        await processAILogbook(newLog._id, data.pengajuan_id, data.deskripsi_kegiatan);
-      } catch (err) {
-        console.error("AI CPMK matching error:", err);
-      }
+      processAILogbook(newLog._id, data.pengajuan_id, data.deskripsi_kegiatan).catch(err => {
+        console.error("Background AI process error:", err);
+      });
     }
 
-    const finalLog = await Logbook.findById(newLog._id);
-    return NextResponse.json(finalLog || newLog, { status: 201 });
+    return NextResponse.json(newLog, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -159,7 +158,10 @@ export async function PATCH(req) {
     let updateData = {};
     if (status_validasi) updateData.status_validasi = status_validasi;
     if (catatan_revisi !== undefined) updateData.catatan_revisi = catatan_revisi;
-    if (deskripsi_kegiatan) updateData.deskripsi_kegiatan = deskripsi_kegiatan;
+    if (deskripsi_kegiatan) {
+      updateData.deskripsi_kegiatan = deskripsi_kegiatan;
+      updateData.ai_status = 'processing';
+    }
     if (bukti_link !== undefined) updateData.bukti_link = bukti_link;
     
     if (bukti_kegiatan) {
@@ -193,16 +195,14 @@ export async function PATCH(req) {
       { new: true }
     );
     
+    // Jalankan analisis semantik AI Gemini di latar belakang saat revisi deskripsi
     if (deskripsi_kegiatan) {
-      try {
-        await processAILogbook(updated._id, updated.pengajuan_id, updated.deskripsi_kegiatan);
-      } catch (err) {
+      processAILogbook(updated._id, updated.pengajuan_id, updated.deskripsi_kegiatan).catch(err => {
         console.error("AI CPMK matching re-run error:", err);
-      }
+      });
     }
     
-    const finalUpdated = await Logbook.findById(id);
-    return NextResponse.json(finalUpdated || updated);
+    return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -315,9 +315,13 @@ Jangan tambahkan teks apapun selain object JSON tersebut.`;
     await Logbook.findByIdAndUpdate(logbookId, { 
       matched_indicators: finalIndicators,
       extracted_skills: extractedSkills,
-      nilai_otomatis: finalIndicators.length * 10 
+      nilai_otomatis: finalIndicators.length * 10,
+      ai_status: 'completed'
     });
   } catch (error) {
     console.error("Background AI process error:", error);
+    try {
+      await Logbook.findByIdAndUpdate(logbookId, { ai_status: 'failed' });
+    } catch (_) {}
   }
 }
