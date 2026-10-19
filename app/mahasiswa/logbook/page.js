@@ -560,6 +560,17 @@ export default function LogbookPage() {
                     <div className="flex flex-col sm:flex-row gap-4">
                       <p className="text-slate-700 dark:text-slate-300 text-sm mt-4 leading-relaxed whitespace-pre-line flex-grow">{log.deskripsi_kegiatan}</p>
                     </div>
+
+                    {log.extracted_skills && log.extracted_skills.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Skills:</span>
+                        {log.extracted_skills.map((skill, sIdx) => (
+                          <span key={sIdx} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/40 px-2.5 py-0.5 rounded-full shadow-xs">
+                            <span className="text-[10px]">✨</span> {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     
                     {expandedPhotos[log._id] && (log.dokumentasi?.length > 0 || log.bukti_kegiatan) && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50 animate-in fade-in slide-in-from-top-2 duration-200">

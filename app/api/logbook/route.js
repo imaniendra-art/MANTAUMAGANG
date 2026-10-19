@@ -230,7 +230,7 @@ async function processAILogbook(logbookId, pengajuanId, deskripsi_kegiatan) {
               allIndicators.push({
                 matkul_kode: mk.kode,
                 matkul_nama: mk.nama,
-                cpmk_id: cpmk._id.toString(),
+                cpmk_id: cpmk._id ? cpmk._id.toString() : (cpmk.nama_cpmk || ''),
                 nama_cpmk: cpmk.nama_cpmk,
                 indikator: ind,
                 saran_kegiatan: cpmk.saran_kegiatan || ""

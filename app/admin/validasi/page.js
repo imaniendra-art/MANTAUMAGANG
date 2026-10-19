@@ -18,6 +18,11 @@ export default function ValidasiPengajuan() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Modal State Ganti DPL
+  const [showGantiDplModal, setShowGantiDplModal] = useState(false);
+  const [changeDplPengajuan, setChangeDplPengajuan] = useState(null);
+  const [newDplId, setNewDplId] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -120,6 +125,44 @@ export default function ValidasiPengajuan() {
       } else {
         const errData = await res.json();
         alert("Gagal menolak: " + errData.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan sistem.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGantiDplClick = (p) => {
+    setChangeDplPengajuan(p);
+    setNewDplId(p.dpl_id?._id || "");
+    setShowGantiDplModal(true);
+  };
+
+  const handleGantiDplSubmit = async (e) => {
+    e.preventDefault();
+    if (!newDplId || !changeDplPengajuan) return;
+    
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/pengajuan', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: changeDplPengajuan._id,
+          dpl_id: newDplId,
+          status_pengajuan: 'disetujui'
+        })
+      });
+      
+      if (res.ok) {
+        setShowGantiDplModal(false);
+        showToast("✅ Berhasil Memperbarui DPL Mahasiswa!");
+        fetchData(activeTab);
+      } else {
+        const errData = await res.json();
+        alert("Gagal mengubah DPL: " + errData.error);
       }
     } catch (error) {
       console.error(error);
@@ -292,8 +335,19 @@ export default function ValidasiPengajuan() {
                               <p className="text-xs text-slate-500 line-clamp-1">{posisiTujuan} • {p.detail_tempat?.alamat || '-'}</p>
                             </td>
                             <td className="py-4 px-4">
-                              <p className="font-bold text-indigo-600 dark:text-indigo-400">{p.dpl_id?.nama_lengkap || '-'}</p>
-                              <p className="text-xs text-slate-500">{p.dpl_id?.nomor_hp || 'Belum ada kontak'}</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <div>
+                                  <p className="font-bold text-indigo-600 dark:text-indigo-400">{p.dpl_id?.nama_lengkap || '-'}</p>
+                                  <p className="text-xs text-slate-500">{p.dpl_id?.nomor_hp || 'Belum ada kontak'}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleGantiDplClick(p)}
+                                  className="px-2.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500 hover:text-white border border-amber-500/20 rounded-lg transition-all flex items-center gap-1 shadow-xs whitespace-nowrap cursor-pointer"
+                                  title="Ganti DPL untuk mahasiswa ini"
+                                >
+                                  🔄 Ganti
+                                </button>
+                              </div>
                             </td>
                             <td className="py-4 px-4">
                               {p.mentor_id ? (
@@ -432,6 +486,73 @@ export default function ValidasiPengajuan() {
                   className="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {submitting ? 'Menyimpan...' : 'Setujui & Tugaskan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ganti DPL */}
+      {showGantiDplModal && changeDplPengajuan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span>🔄</span> Ganti DPL Mahasiswa
+              </h3>
+              <button onClick={() => setShowGantiDplModal(false)} className="text-slate-500 dark:text-slate-400 hover:text-red-400 font-bold text-2xl leading-none">&times;</button>
+            </div>
+            
+            <form onSubmit={handleGantiDplSubmit}>
+              <div className="p-6 space-y-5">
+                
+                {/* Rangkuman Mahasiswa */}
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Mahasiswa</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-100">{changeDplPengajuan.mahasiswa_id?.nama_lengkap}</p>
+                      <p className="text-xs text-slate-500 font-medium">{changeDplPengajuan.mahasiswa_id?.nim_nidn}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">DPL Saat Ini</p>
+                      <p className="font-bold text-indigo-600 dark:text-indigo-400">{changeDplPengajuan.dpl_id?.nama_lengkap || 'Belum diplot'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pilih DPL Baru */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Pilih DPL Baru</label>
+                  <select 
+                    required 
+                    value={newDplId} 
+                    onChange={(e) => setNewDplId(e.target.value)} 
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 font-medium appearance-none"
+                  >
+                    <option value="" disabled>-- Pilih DPL Pengganti --</option>
+                    {dpls.map(dpl => (
+                      <option key={dpl._id} value={dpl._id}>
+                        {dpl.nama_lengkap} {changeDplPengajuan.dpl_id?._id === dpl._id ? '(DPL Saat Ini)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-500 mt-2">Seluruh bimbingan, catatan, dan evaluasi mahasiswa ini akan otomatis dialihkan ke DPL baru.</p>
+                </div>
+
+              </div>
+              
+              <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowGantiDplModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/80 rounded-xl transition-colors">
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting || !newDplId}
+                  className="px-6 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-[0_4px_15px_rgba(217,119,6,0.3)] transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                >
+                  {submitting ? 'Menyimpan...' : 'Simpan DPL Baru'}
                 </button>
               </div>
             </form>

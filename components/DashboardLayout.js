@@ -110,6 +110,54 @@ function UserMenu({ nama, role }) {
   );
 }
 
+// ═══════════════════════ IMPERSONATION BANNER ═══════════════════════
+function ImpersonationBanner({ session }) {
+  const [reverting, setReverting] = useState(false);
+
+  if (!session?.user?.impersonatedBy) return null;
+
+  const handleRevertAdmin = async () => {
+    setReverting(true);
+    try {
+      const res = await fetch('/api/admin/impersonate/revert', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.revertToken) {
+        const { signIn } = await import('next-auth/react');
+        await signIn('credentials', {
+          impersonateToken: data.revertToken,
+          redirect: false
+        });
+        window.location.href = '/admin/dpl';
+      } else {
+        alert("Gagal kembali ke akun admin: " + (data.error || "Terjadi kesalahan"));
+        setReverting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan sistem saat kembali ke akun admin.");
+      setReverting(false);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-6 py-2.5 text-xs sm:text-sm font-bold flex flex-wrap items-center justify-between gap-3 shadow-md sticky top-0 z-[100] border-b border-white/20 animate-in slide-in-from-top-2 duration-300">
+      <div className="flex items-center gap-2">
+        <span className="text-base sm:text-lg animate-pulse">🛡️</span>
+        <span>
+          Mode Bantuan Admin: Anda sedang login mewakili <strong className="underline decoration-white/60">{session.user.nama_lengkap}</strong> (Dosen Pembimbing).
+        </span>
+      </div>
+      <button
+        onClick={handleRevertAdmin}
+        disabled={reverting}
+        className="bg-white text-orange-800 hover:bg-orange-50 px-4 py-1.5 rounded-xl text-xs font-black shadow-md transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>🔙</span> {reverting ? "Mengembalikan..." : "Kembali ke Akun Admin"}
+      </button>
+    </div>
+  );
+}
+
 // ═══════════════════════ MENU CONFIG ═══════════════════════
 const MENU_CONFIG = {
   admin_prodi: {
@@ -118,6 +166,7 @@ const MENU_CONFIG = {
     menus: [
       { name: "Manajemen Pengguna", href: "/admin/pengguna", icon: "👥", desc: "Kelola akun Mahasiswa, DPL, dan Mentor.", color: "from-blue-500 to-blue-600" },
       { name: "Master Data", href: "/admin/master-data", icon: "🗂️", desc: "Kelola Instansi Mitra, Posisi, dan Matkul.", color: "from-indigo-500 to-indigo-600" },
+      { name: "Master DPL", href: "/admin/dpl", icon: "👨‍🏫", desc: "Kelola dosen pembimbing & bantuan akses.", color: "from-blue-600 to-indigo-600" },
       { name: "Validasi dan Data Pengajuan", href: "/admin/validasi", icon: "📋", desc: "Persetujuan magang & plotting DPL.", color: "from-emerald-500 to-emerald-600" },
       { name: "Monitoring Magang", href: "/admin/monitoring", icon: "👁️", desc: "Pantau logbook dan kendala lapangan.", color: "from-amber-500 to-amber-600" },
       { name: "Rekapitulasi Nilai", href: "/admin/rekapitulasi", icon: "⭐", desc: "Hasil akhir dan konversi SKS.", color: "from-purple-500 to-purple-600" },
@@ -158,6 +207,7 @@ const MENU_CONFIG = {
 };
 
 const SUB_PAGE_TITLES = {
+  "/admin/dpl": "Master DPL (Dosen Pembimbing Lapangan)",
   "/admin/validasi": "Validasi dan Data Pengajuan",
   "/admin/master-data": "Manajemen Data",
   "/admin/settings": "Pengaturan",
@@ -221,6 +271,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
   if (!isMainDashboard) {
     return (
       <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-900">
+        <ImpersonationBanner session={session} />
         <GridBackground isDark={isDark} />
         {/* Glow effects */}
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.06] dark:from-blue-500/10 to-transparent rounded-full pointer-events-none" />
@@ -260,6 +311,7 @@ export default function DashboardLayout({ children, title = "Dashboard", notific
   // ═══════════════════════ MAIN DASHBOARD LAYOUT ═══════════════════════
   return (
     <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-900">
+      <ImpersonationBanner session={session} />
       <GridBackground isDark={isDark} />
       {/* Glow effects */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.08] dark:from-blue-500/15 to-transparent rounded-full pointer-events-none" />

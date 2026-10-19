@@ -10,9 +10,16 @@ export default function CetakPengantar() {
   const [posisiData, setPosisiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(null);
+  const [periode, setPeriode] = useState(null);
 
   useEffect(() => {
     fetch("/api/config").then(res=>res.json()).then(c=>{if(c)setConfig(c)}).catch(console.error);
+    fetch("/api/periode").then(res=>res.json()).then(p=>{
+      if (Array.isArray(p)) {
+        const active = p.find(item => item.is_active) || p[0];
+        if (active) setPeriode(active);
+      }
+    }).catch(console.error);
 
     if (session?.user?.id) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -67,16 +74,41 @@ export default function CetakPengantar() {
   let nomorSurat = "......../STIMI/................/20....";
   let tanggalSurat = "............................";
 
+  const terbilangMap = {
+    1: 'satu',
+    2: 'dua',
+    3: 'tiga',
+    4: 'empat',
+    5: 'lima',
+    6: 'enam'
+  };
+
+  // Ambil durasi bulan langsung dari Master Periode aktif atau fallback ke data pengajuan
+  let durasiBulan = Number(periode?.durasi_bulan);
+  if (!durasiBulan && data?.pengajuan?.tanggal_mulai && data?.pengajuan?.tanggal_selesai) {
+    const dStart = new Date(data.pengajuan.tanggal_mulai);
+    const dEnd = new Date(data.pengajuan.tanggal_selesai);
+    const diff = (dEnd.getFullYear() - dStart.getFullYear()) * 12 + (dEnd.getMonth() - dStart.getMonth());
+    durasiBulan = diff > 0 ? diff : 3;
+  }
+  durasiBulan = durasiBulan || 3;
+  const durasiTerbilang = terbilangMap[durasiBulan] || `${durasiBulan}`;
+
   if (posisiData) {
     mitra = posisiData.mitra_id?.nama_instansi || ".......................................................";
     alamatMitra = posisiData.mitra_id?.alamat || ".......................................................";
-    // Default to current date and 3 months later if not yet submitted
-    tanggalSelesai.setMonth(tanggalSelesai.getMonth() + 3);
+    tanggalSelesai = new Date(tanggalMulai);
+    tanggalSelesai.setMonth(tanggalSelesai.getMonth() + durasiBulan);
   } else if (data?.pengajuan) {
     mitra = data.pengajuan.mitra_id?.nama_perusahaan || data.pengajuan.detail_tempat?.nama || ".......................................................";
     alamatMitra = data.pengajuan.detail_tempat?.alamat || ".......................................................";
     tanggalMulai = new Date(data.pengajuan.tanggal_mulai || new Date());
-    tanggalSelesai = new Date(data.pengajuan.tanggal_selesai || new Date(tanggalMulai).setMonth(tanggalMulai.getMonth() + 3));
+    if (data.pengajuan.tanggal_selesai) {
+      tanggalSelesai = new Date(data.pengajuan.tanggal_selesai);
+    } else {
+      tanggalSelesai = new Date(tanggalMulai);
+      tanggalSelesai.setMonth(tanggalSelesai.getMonth() + durasiBulan);
+    }
     if (data.pengajuan.dpl_id) {
        namaDpl = data.pengajuan.dpl_id.nama_lengkap || "........................................";
        nidnDpl = data.pengajuan.dpl_id.nidn || data.pengajuan.dpl_id.nim_nidn || "....................";
@@ -165,7 +197,7 @@ export default function CetakPengantar() {
             <p>Adapun mahasiswa yang bersangkutan terlampir pada halaman kedua surat ini.</p>
             
             <p className="mt-4">
-              Rencana pelaksanaan kegiatan magang ini akan dilaksanakan selama <strong>4 (empat) bulan</strong>, terhitung mulai bulan <strong>{tanggalMulai.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</strong> sampai dengan <strong>{tanggalSelesai.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</strong>.
+              Rencana pelaksanaan kegiatan magang ini akan dilaksanakan selama <strong>{durasiBulan} ({durasiTerbilang}) bulan</strong>, terhitung mulai bulan <strong>{tanggalMulai.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</strong> sampai dengan <strong>{tanggalSelesai.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</strong>.
             </p>
             <p>
               Demikian surat permohonan ini kami sampaikan, atas perhatian dan kerjasama yang baik dari Bapak/Ibu kami ucapkan terima kasih.

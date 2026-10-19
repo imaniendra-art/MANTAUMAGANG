@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
+import ImpersonationToken from "@/models/ImpersonationToken";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
@@ -11,10 +12,46 @@ export const authOptions = {
       credentials: {
         email: { label: "Email / NIM / Username", type: "text", placeholder: "Email, NIM, atau Username" },
         password: { label: "Password", type: "password" },
-        magicToken: { type: "hidden" }
+        magicToken: { type: "hidden" },
+        impersonateToken: { type: "hidden" }
       },
       async authorize(credentials) {
         await connectToDatabase();
+
+        // Handle Admin Impersonation (Login Sebagai DPL / Revert ke Admin)
+        if (credentials?.impersonateToken) {
+          const impDoc = await ImpersonationToken.findOne({ token: credentials.impersonateToken });
+          if (!impDoc || (impDoc.expiresAt && impDoc.expiresAt < new Date())) {
+            throw new Error('Token impersonasi tidak valid atau telah kadaluarsa');
+          }
+
+          // Consume token agar hanya bisa dipakai sekali
+          await ImpersonationToken.deleteOne({ _id: impDoc._id });
+
+          const targetUser = await User.findById(impDoc.target_user_id);
+          if (!targetUser) {
+            throw new Error('Pengguna target tidak ditemukan');
+          }
+
+          const isRevert = impDoc.type === 'revert';
+
+          return {
+            id: targetUser._id.toString(),
+            email: targetUser.email,
+            nama_lengkap: targetUser.nama_lengkap,
+            nim_nidn: targetUser.nim_nidn,
+            nidn: targetUser.nidn,
+            role: targetUser.role,
+            isFirstLogin: targetUser.isFirstLogin,
+            konsentrasi: targetUser.konsentrasi || "Manajemen SDM (Default)",
+            program_studi: targetUser.program_studi || "Manajemen (S1)",
+            impersonatedBy: isRevert ? null : {
+              id: impDoc.admin_id.toString(),
+              nama_lengkap: impDoc.admin_name,
+              role: impDoc.admin_role
+            }
+          };
+        }
 
         // Handle Magic Token for Mentor Login
         if (credentials?.magicToken) {
@@ -100,6 +137,7 @@ export const authOptions = {
         token.isFirstLogin = user.isFirstLogin;
         token.konsentrasi = user.konsentrasi;
         token.program_studi = user.program_studi;
+        token.impersonatedBy = user.impersonatedBy || null;
       }
 
       // Validasi real-time: Cek apakah user masih ada di database
@@ -150,6 +188,7 @@ export const authOptions = {
         session.user.isFirstLogin = token.isFirstLogin;
         session.user.konsentrasi = token.konsentrasi;
         session.user.program_studi = token.program_studi;
+        session.user.impersonatedBy = token.impersonatedBy || null;
       }
       return session;
     }

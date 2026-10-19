@@ -210,28 +210,31 @@ export async function PATCH(req) {
     }
 
     if (status_pengajuan === 'disetujui') {
-      const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().getMonth();
-      const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
-      
-      const startOfYear = new Date(currentYear, 0, 1);
-      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
-      
-      const lastDoc = await PengajuanMagang.findOne({
-        nomor_surat_pengantar: { $exists: true, $ne: "" },
-        updatedAt: { $gte: startOfYear, $lte: endOfYear }
-      }).sort({ updatedAt: -1 });
+      const existingDoc = await PengajuanMagang.findById(id);
+      if (!existingDoc?.nomor_surat_pengantar) {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth();
+        const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+        
+        const startOfYear = new Date(currentYear, 0, 1);
+        const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+        
+        const lastDoc = await PengajuanMagang.findOne({
+          nomor_surat_pengantar: { $exists: true, $ne: "" },
+          updatedAt: { $gte: startOfYear, $lte: endOfYear }
+        }).sort({ updatedAt: -1 });
 
-      let nextUrut = 1;
-      if (lastDoc && lastDoc.nomor_surat_pengantar) {
-        const match = lastDoc.nomor_surat_pengantar.match(/^(\d+)/);
-        if (match) {
-          nextUrut = parseInt(match[1], 10) + 1;
+        let nextUrut = 1;
+        if (lastDoc && lastDoc.nomor_surat_pengantar) {
+          const match = lastDoc.nomor_surat_pengantar.match(/^(\d+)/);
+          if (match) {
+            nextUrut = parseInt(match[1], 10) + 1;
+          }
         }
+        
+        const paddedUrut = String(nextUrut).padStart(3, '0');
+        updatePayload.nomor_surat_pengantar = `${paddedUrut}/STIMI/M.B/${romanMonths[currentMonth]}/${currentYear}`;
       }
-      
-      const paddedUrut = String(nextUrut).padStart(3, '0');
-      updatePayload.nomor_surat_pengantar = `${paddedUrut}/STIMI/M.B/${romanMonths[currentMonth]}/${currentYear}`;
     }
 
     const updated = await PengajuanMagang.findByIdAndUpdate(
