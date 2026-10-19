@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import * as XLSX from "xlsx";
 
 export default function ManajemenPenggunaPage() {
   const [activeTab, setActiveTab] = useState("mahasiswa");
@@ -101,49 +102,61 @@ export default function ManajemenPenggunaPage() {
     return sortConfig.direction === 'asc' ? " ↑" : " ↓";
   };
 
-  // CSV Parser Helper
-  const parseCSV = (text) => {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    if (lines.length < 2) return []; // Need at least header + 1 row
-    
-    // Auto-detect separator (koma atau titik koma)
-    const separator = lines[0].includes(';') ? ';' : ',';
-    
-    const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
-    const result = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(separator).map(v => v.trim());
-      const rowData = {};
-      headers.forEach((header, index) => {
-        rowData[header] = values[index] || "";
-      });
-      // Pastikan ada nim
-      if (rowData.nim) {
-        result.push(rowData);
-      }
-    }
-    return result;
-  };
-
   const handleImportSubmit = async (e) => {
     e.preventDefault();
-    if (!file) return alert("Pilih file CSV terlebih dahulu.");
+    if (!file) return alert("Pilih file Excel (.xlsx, .xls) atau CSV terlebih dahulu.");
 
     setImporting(true);
     setImportResult(null);
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      const text = e.target.result;
-      const parsedData = parseCSV(text);
-
-      if (parsedData.length === 0) {
-        setImporting(false);
-        return alert("Data kosong atau format CSV tidak sesuai. Pastikan ada header 'nim', 'nama', 'konsentrasi' (dipisahkan dengan koma).");
-      }
-
+    reader.onload = async (evt) => {
       try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsName = wb.SheetNames[0];
+        const ws = wb.Sheets[wsName];
+        const rawJson = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        if (!rawJson || rawJson.length === 0) {
+          setImporting(false);
+          return alert("File kosong atau tidak dapat dibaca. Pastikan ada baris data.");
+        }
+
+        // Normalisasi header (case-insensitive & alias untuk NIM, Nama, Prodi)
+        const parsedData = [];
+        for (const row of rawJson) {
+          const keys = Object.keys(row);
+          let nim = "";
+          let nama = "";
+          let prodi = "";
+
+          for (const key of keys) {
+            const cleanKey = key.trim().toLowerCase();
+            const val = row[key]?.toString().trim() || "";
+            if (cleanKey === 'nim' || cleanKey === 'nim_nidn' || cleanKey === 'npm' || cleanKey === 'no. induk' || cleanKey === 'nomor induk') {
+              nim = val;
+            } else if (cleanKey === 'nama' || cleanKey === 'nama_lengkap' || cleanKey === 'nama mahasiswa' || cleanKey === 'mahasiswa') {
+              nama = val;
+            } else if (cleanKey === 'prodi' || cleanKey === 'program studi' || cleanKey === 'program_studi' || cleanKey === 'jurusan') {
+              prodi = val;
+            }
+          }
+
+          if (nim) {
+            parsedData.push({
+              nim,
+              nama: nama || `Mahasiswa ${nim}`,
+              prodi: prodi || "Manajemen (S1)"
+            });
+          }
+        }
+
+        if (parsedData.length === 0) {
+          setImporting(false);
+          return alert("Tidak ditemukan kolom NIM pada file. Pastikan terdapat kolom dengan judul 'NIM'.");
+        }
+
         const res = await fetch('/api/admin/pengguna/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -158,13 +171,13 @@ export default function ManajemenPenggunaPage() {
         }
       } catch (error) {
         console.error("Gagal import", error);
-        setImportResult({ error: "Terjadi kesalahan sistem saat proses import." });
+        setImportResult({ error: "Terjadi kesalahan sistem saat proses import: " + error.message });
       } finally {
         setImporting(false);
       }
     };
     
-    reader.readAsText(file);
+    reader.readAsBinaryString(file);
   };
 
   const closeModal = () => {
@@ -588,23 +601,41 @@ export default function ManajemenPenggunaPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl overflow-hidden relative scale-in-95 duration-200">
             <div className="p-8 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:white flex items-center gap-2">
-                📥 Import Data Mahasiswa (SIAM)
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                📥 Import Data Mahasiswa (Excel / CSV)
               </h2>
             </div>
             
             <div className="p-8 bg-slate-50 dark:bg-slate-900/50">
               <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-5 rounded-xl text-sm border border-blue-200 dark:border-blue-800">
-                <p className="font-bold mb-2">Petunjuk Format CSV:</p>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <p className="font-bold">Petunjuk Format File (Excel / CSV):</p>
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href="/api/admin/pengguna/template" 
+                      download="Template_Import_Mahasiswa.xlsx"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition-all"
+                    >
+                      <span>📊</span> Unduh Template (.xlsx)
+                    </a>
+                    <a 
+                      href="/api/admin/pengguna/template?format=csv" 
+                      download="Template_Import_SIAM.csv"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-bold transition-all"
+                    >
+                      <span>📄</span> CSV
+                    </a>
+                  </div>
+                </div>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Baris pertama WAJIB ada header: <strong>nim, nama, prodi</strong> (boleh ada kolom 'no')</li>
-                  <li>Pisahkan kolom dengan koma (,) atau titik koma (;).</li>
-                  <li>Konsentrasi dan password akan diisi langsung oleh mahasiswa saat login pertama kali.</li>
+                  <li>Mendukung format file <strong>Excel (.xlsx, .xls)</strong> dan <strong>CSV (.csv)</strong>.</li>
+                  <li>Baris pertama WAJIB ada header kolom: <strong>NIM</strong>, <strong>Nama</strong>, <strong>Prodi</strong> (kolom 'No' opsional).</li>
+                  <li>Password awal otomatis diset ke <strong>NIM</strong> dan mahasiswa wajib aktivasi saat login pertama kali.</li>
                 </ul>
                 <div className="mt-3 p-3 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 font-mono text-xs opacity-80 overflow-x-auto">
-                  no;nim;nama;prodi<br/>
-                  1;246120101;Budi Santoso;Manajemen (S1)<br/>
-                  2;246120102;Ayu Lestari;Manajemen (S1)
+                  No | NIM | Nama Mahasiswa | Program Studi<br/>
+                  1 | 246120101 | Budi Santoso | Manajemen (S1)<br/>
+                  2 | 246120102 | Ayu Lestari | Manajemen (S1)
                 </div>
               </div>
 
@@ -618,7 +649,7 @@ export default function ManajemenPenggunaPage() {
                       <p className="font-normal mt-1">Berhasil memproses: {importResult.inserted} data.</p>
                       {importResult.errors?.length > 0 && (
                         <div className="mt-3 text-red-600 font-normal max-h-32 overflow-y-auto bg-white p-2 rounded">
-                          <p className="font-bold mb-1">Gagal diproses:</p>
+                          <p className="font-bold mb-1">Gagal diproses ({importResult.errors.length}):</p>
                           <ul className="list-disc pl-4 text-xs space-y-1">
                             {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
                           </ul>
@@ -632,7 +663,7 @@ export default function ManajemenPenggunaPage() {
               <form onSubmit={handleImportSubmit}>
                 <input 
                   type="file" 
-                  accept=".csv"
+                  accept=".xlsx, .xls, .csv"
                   onChange={(e) => setFile(e.target.files[0])}
                   ref={fileInputRef}
                   className="block w-full text-sm text-slate-500 dark:text-slate-400
