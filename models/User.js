@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['mahasiswa', 'dpl', 'admin_prodi', 'mentor'],
+    enum: ['mahasiswa', 'dpl', 'admin_prodi', 'mentor', 'super_admin', 'admin'],
     required: [true, 'Role wajib diisi'],
   },
   program_studi: {

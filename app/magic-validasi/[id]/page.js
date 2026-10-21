@@ -17,13 +17,13 @@ export default async function MagicValidasiPage({ params, searchParams }) {
 
   if (!logbook) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center border border-slate-100 dark:border-slate-700">
           <div className="mb-6 flex justify-center">
-            <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-5xl">❌</div>
+            <div className="w-24 h-24 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-5xl">❌</div>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 mb-3">Tidak Ditemukan</h1>
-          <p className="text-slate-500 mb-4">Logbook tidak ditemukan atau link tidak valid.</p>
+          <h1 className="text-2xl font-black text-slate-800 dark:text-white mb-3">Tidak Ditemukan</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Logbook tidak ditemukan atau link tidak valid.</p>
         </div>
       </div>
     );
@@ -32,14 +32,14 @@ export default async function MagicValidasiPage({ params, searchParams }) {
   // Jika aksi sukses
   if (action === 'success') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center animate-in zoom-in-95 duration-500">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center border border-slate-100 dark:border-slate-700 animate-in zoom-in-95 duration-500">
           <div className="mb-6 flex justify-center">
-            <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-5xl">✅</div>
+            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center text-5xl">✅</div>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 mb-3">Validasi Berhasil!</h1>
-          <p className="text-slate-500 mb-6">Aktivitas logbook mahasiswa berhasil divalidasi.</p>
-          <p className="text-sm text-slate-400 bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <h1 className="text-2xl font-black text-slate-800 dark:text-white mb-3">Validasi Berhasil!</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">Aktivitas logbook mahasiswa berhasil divalidasi.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
             Terima kasih Bapak/Ibu Mentor atas waktunya. Anda sudah bisa menutup halaman ini.
           </p>
         </div>
@@ -63,45 +63,45 @@ export default async function MagicValidasiPage({ params, searchParams }) {
   const isInvalidStatus = logbook.status_validasi !== 'menunggu_mentor' && !isAlreadyValidated;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans text-slate-800">
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
-        <div className="p-6 md:p-8 border-b border-slate-100">
-          <h1 className="text-2xl font-black mb-1">Aktivitas Logbook Mahasiswa</h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] py-8 px-4 font-sans text-slate-800 dark:text-slate-100">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-3xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700/80">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-1">Aktivitas Logbook Mahasiswa</h1>
           {logbook.status_validasi === 'menunggu_mentor' ? (
-             <p className="text-slate-500 text-sm">Mohon periksa aktivitas berikut sebelum melakukan validasi.</p>
+             <p className="text-slate-500 dark:text-slate-400 text-sm">Mohon periksa aktivitas berikut sebelum melakukan validasi.</p>
           ) : isAlreadyValidated ? (
-             <p className="text-emerald-600 text-sm font-bold flex items-center gap-1.5"><span>✅</span> Aktivitas ini sudah tervalidasi.</p>
+             <p className="text-emerald-600 dark:text-emerald-400 text-sm font-bold flex items-center gap-1.5"><span>✅</span> Aktivitas ini sudah tervalidasi.</p>
           ) : (
-             <p className="text-red-500 text-sm font-bold flex items-center gap-1.5"><span>❌</span> Aktivitas ini tidak sedang menunggu validasi.</p>
+             <p className="text-red-500 dark:text-red-400 text-sm font-bold flex items-center gap-1.5"><span>❌</span> Aktivitas ini tidak sedang menunggu validasi.</p>
           )}
         </div>
         
-        <div className="p-6 md:p-8 space-y-6 bg-slate-50/50">
+        <div className="p-6 md:p-8 space-y-6 bg-slate-50/50 dark:bg-slate-900/40">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Mahasiswa</p>
-              <p className="font-bold text-indigo-700">{logbook.mahasiswa_id?.nama_lengkap || 'Unknown'}</p>
+            <div className="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Nama Mahasiswa</p>
+              <p className="font-bold text-indigo-700 dark:text-indigo-400">{logbook.mahasiswa_id?.nama_lengkap || 'Unknown'}</p>
             </div>
-            <div className="bg-white p-4 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tanggal Kegiatan</p>
-              <p className="font-bold">{tanggal}</p>
+            <div className="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Tanggal Kegiatan</p>
+              <p className="font-bold text-slate-900 dark:text-white">{tanggal}</p>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Deskripsi Kegiatan</p>
-            <div className="prose prose-sm prose-slate max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap">
+          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Deskripsi Kegiatan</p>
+            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
               {logbook.deskripsi_kegiatan}
             </div>
           </div>
 
           {logbook.dokumentasi && logbook.dokumentasi.length > 0 && (
-            <div className="bg-white p-5 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Dokumentasi & Bukti</p>
+            <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Dokumentasi & Bukti</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {logbook.dokumentasi.map((doc, idx) => (
-                  <div key={idx} className="border border-slate-100 rounded-xl overflow-hidden shadow-sm flex flex-col">
-                    <div className="aspect-video bg-slate-100 flex items-center justify-center p-2 relative">
+                  <div key={idx} className="border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                    <div className="aspect-video bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-2 relative">
                       {doc.file.includes('.pdf') ? (
                         <div className="text-4xl">📄</div>
                       ) : (
@@ -111,7 +111,7 @@ export default async function MagicValidasiPage({ params, searchParams }) {
                       )}
                     </div>
                     {doc.keterangan && (
-                      <div className="p-3 bg-white border-t border-slate-100 text-xs font-medium text-slate-600 text-center">
+                      <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 text-center">
                         {doc.keterangan}
                       </div>
                     )}
@@ -122,16 +122,16 @@ export default async function MagicValidasiPage({ params, searchParams }) {
           )}
           
           {!logbook.dokumentasi?.length && logbook.bukti_kegiatan && (
-            <div className="bg-white p-5 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Bukti File</p>
-              <a href={logbook.bukti_kegiatan} target="_blank" rel="noreferrer" className="text-sm font-bold text-blue-600 hover:underline">
+            <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Bukti File</p>
+              <a href={logbook.bukti_kegiatan} target="_blank" rel="noreferrer" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
                 Lihat Bukti
               </a>
             </div>
           )}
         </div>
 
-        <div className="p-6 md:p-8 border-t border-slate-100 flex justify-end gap-3 bg-white">
+        <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 bg-white dark:bg-slate-800">
           {logbook.status_validasi === 'menunggu_mentor' ? (
             <form action={handleValidasi}>
               <button type="submit" className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all hover:scale-105">
@@ -139,11 +139,11 @@ export default async function MagicValidasiPage({ params, searchParams }) {
               </button>
             </form>
           ) : isAlreadyValidated ? (
-             <div className="px-6 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl flex items-center gap-2">
+             <div className="px-6 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl flex items-center gap-2">
                 ✅ Sudah Divalidasi
              </div>
           ) : (
-             <div className="px-6 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl flex items-center gap-2">
+             <div className="px-6 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl flex items-center gap-2">
                 ❌ Tidak Dapat Divalidasi
              </div>
           )}

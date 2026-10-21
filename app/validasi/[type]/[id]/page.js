@@ -85,21 +85,21 @@ export default async function ValidasiDigitalPage({ params }) {
 
   if (!valid) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center border-t-8 border-red-500">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center border border-slate-100 dark:border-slate-700 border-t-8 border-t-red-500">
           <div className="mb-6 flex justify-center">
-            <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-4xl">❌</div>
+            <div className="w-20 h-20 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-4xl">❌</div>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 mb-3">Dokumen Tidak Valid</h1>
-          <p className="text-slate-500 mb-4">Barcode yang Anda scan tidak dikenali, atau dokumen belum disetujui secara resmi oleh sistem.</p>
+          <h1 className="text-2xl font-black text-slate-800 dark:text-white mb-3">Dokumen Tidak Valid</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Barcode yang Anda scan tidak dikenali, atau dokumen belum disetujui secara resmi oleh sistem.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700 animate-in zoom-in-95 duration-500">
         <div className="bg-emerald-600 p-6 text-center text-white">
           <div className="mb-4 flex justify-center">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm">✅</div>
@@ -111,31 +111,31 @@ export default async function ValidasiDigitalPage({ params }) {
         <div className="p-8">
           <div className="space-y-4">
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Jenis Dokumen</p>
-              <p className="text-lg font-bold text-slate-800">{dokumen.judul}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Jenis Dokumen</p>
+              <p className="text-lg font-bold text-slate-800 dark:text-white">{dokumen.judul}</p>
             </div>
             
             {dokumen.nomor_surat && (
               <div>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Nomor Dokumen</p>
-                <p className="font-semibold text-slate-700">{dokumen.nomor_surat}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Nomor Dokumen</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{dokumen.nomor_surat}</p>
               </div>
             )}
             
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Diterbitkan Untuk</p>
-              <p className="font-semibold text-slate-700">{dokumen.nama_mahasiswa}</p>
-              <p className="text-sm text-slate-500">NIM: {dokumen.nim}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Diterbitkan Untuk</p>
+              <p className="font-semibold text-slate-700 dark:text-slate-200">{dokumen.nama_mahasiswa}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">NIM: {dokumen.nim}</p>
             </div>
 
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Penandatangan Digital</p>
-              <p className="font-semibold text-slate-700">{dokumen.disahkan_oleh}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Penandatangan Digital</p>
+              <p className="font-semibold text-slate-700 dark:text-slate-200">{dokumen.disahkan_oleh}</p>
             </div>
 
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Tanggal Pengesahan</p>
-              <p className="font-semibold text-slate-700">
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Tanggal Pengesahan</p>
+              <p className="font-semibold text-slate-700 dark:text-slate-200">
                 {new Date(dokumen.tanggal).toLocaleDateString('id-ID', {
                   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 })}
@@ -143,8 +143,8 @@ export default async function ValidasiDigitalPage({ params }) {
             </div>
           </div>
           
-          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400">
+          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               Sistem Informasi MANTAU MAGANG<br/>
               STIMI YAPMI Makassar
             </p>

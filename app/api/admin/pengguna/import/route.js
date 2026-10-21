@@ -9,8 +9,8 @@ export async function POST(req) {
   await dbConnect();
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin_prodi') {
-      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+    if (!session || !['admin_prodi', 'super_admin', 'admin'].includes(session.user?.role)) {
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Administrator." }, { status: 401 });
     }
 
     const payload = await req.json();

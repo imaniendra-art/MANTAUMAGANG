@@ -341,7 +341,7 @@ export default function MasterDplPage() {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900 dark:text-slate-100">{dpl.nama_lengkap}</p>
-                            <p className="text-xs text-slate-500 font-medium">{dpl.program_studi || 'STIMI YAPMI'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{dpl.program_studi || 'STIMI YAPMI'}</p>
                           </div>
                         </div>
                       </td>
@@ -463,7 +463,7 @@ export default function MasterDplPage() {
               <div className="bg-blue-50 dark:bg-slate-900/60 p-4 rounded-2xl border border-blue-100 dark:border-slate-700 space-y-2">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dosen Target</p>
                 <p className="text-base font-black text-slate-900 dark:text-slate-100">{impersonatingDpl.nama_lengkap}</p>
-                <p className="text-xs text-slate-500 font-medium">NIDN: {impersonatingDpl.nidn || impersonatingDpl.nim_nidn}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">NIDN: {impersonatingDpl.nidn || impersonatingDpl.nim_nidn}</p>
                 <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">Mahasiswa Bimbingan: {impersonatingDpl.total_mahasiswa} Orang</p>
               </div>
 
@@ -529,7 +529,7 @@ export default function MasterDplPage() {
                   <div key={mhs.id || i} className="py-3 flex items-center justify-between gap-3">
                     <div>
                       <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{mhs.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono">NIM: {mhs.nim}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">NIM: {mhs.nim}</p>
                     </div>
                     <div className="text-right">
                       <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
@@ -563,7 +563,7 @@ export default function MasterDplPage() {
             <form onSubmit={handleAddSubmit}>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Lengkap & Gelar *</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Nama Lengkap & Gelar *</label>
                   <input
                     type="text"
                     required
@@ -576,7 +576,7 @@ export default function MasterDplPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">NIDN / Username *</label>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">NIDN / Username *</label>
                     <input
                       type="text"
                       required
@@ -587,7 +587,7 @@ export default function MasterDplPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nomor WhatsApp</label>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Nomor WhatsApp</label>
                     <input
                       type="text"
                       placeholder="081234567890"
@@ -599,7 +599,7 @@ export default function MasterDplPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Alamat Email (Opsional)</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Alamat Email (Opsional)</label>
                   <input
                     type="email"
                     placeholder="dosen@stimi-yapmi.ac.id"
@@ -610,7 +610,7 @@ export default function MasterDplPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password Awal (Opsional)</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Password Awal (Opsional)</label>
                   <input
                     type="text"
                     placeholder="Kosongkan untuk otomatis menggunakan NIDN"
@@ -618,12 +618,12 @@ export default function MasterDplPage() {
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 font-medium text-sm"
                   />
-                  <p className="text-xs text-slate-400 mt-1">Default password adalah NIDN masing-masing.</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Default password adalah NIDN masing-masing.</p>
                 </div>
               </div>
 
               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl transition-colors">
                   Batal
                 </button>
                 <button
@@ -651,7 +651,7 @@ export default function MasterDplPage() {
             <form onSubmit={handleEditSubmit}>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Lengkap & Gelar *</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Nama Lengkap & Gelar *</label>
                   <input
                     type="text"
                     required
@@ -663,7 +663,7 @@ export default function MasterDplPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">NIDN / Username *</label>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">NIDN / Username *</label>
                     <input
                       type="text"
                       required
@@ -673,7 +673,7 @@ export default function MasterDplPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nomor WhatsApp</label>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Nomor WhatsApp</label>
                     <input
                       type="text"
                       value={form.nomor_hp}
@@ -684,7 +684,7 @@ export default function MasterDplPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Alamat Email</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Alamat Email</label>
                   <input
                     type="email"
                     value={form.email}
@@ -695,7 +695,7 @@ export default function MasterDplPage() {
               </div>
 
               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowEditModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+                <button type="button" onClick={() => setShowEditModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl transition-colors">
                   Batal
                 </button>
                 <button

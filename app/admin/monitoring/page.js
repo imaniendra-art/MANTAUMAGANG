@@ -59,8 +59,8 @@ function StudentLogbookList({ mahasiswaId }) {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse text-sm">Mengambil data logbook...</div>;
-  if (logbooks.length === 0) return <div className="p-8 text-center text-slate-500 text-sm">Belum ada riwayat logbook.</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 dark:text-slate-400 font-bold animate-pulse text-sm">Mengambil data logbook...</div>;
+  if (logbooks.length === 0) return <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">Belum ada riwayat logbook.</div>;
 
   const totalPages = Math.ceil(logbooks.length / itemsPerPage);
   const currentLogbooks = logbooks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -195,7 +195,7 @@ function StudentLogbookList({ mahasiswaId }) {
                        <img src={doc.file} alt="" className="object-contain w-full h-full" />
                     )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                      <span className="bg-white/90 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Buka File</span>
+                      <span className="bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Buka File</span>
                     </div>
                   </div>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed text-center">
@@ -292,7 +292,7 @@ export default function MonitoringLogbookPage() {
 
         {/* Table Card */}
         {loading ? (
-          <div className="text-center py-20 text-slate-500 font-bold animate-pulse">Memuat data mahasiswa...</div>
+          <div className="text-center py-20 text-slate-500 dark:text-slate-400 font-bold animate-pulse">Memuat data mahasiswa...</div>
         ) : (
           <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
             <div className="overflow-x-auto">
@@ -309,7 +309,7 @@ export default function MonitoringLogbookPage() {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                   {filteredPengajuans.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="py-12 text-center text-slate-500 font-medium">
+                      <td colSpan="5" className="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
                         <div className="text-4xl mb-3">📭</div>
                         Tidak ada mahasiswa magang aktif ditemukan.
                       </td>
@@ -320,13 +320,13 @@ export default function MonitoringLogbookPage() {
                         <tr className={`transition-colors ${expandedId === p.mahasiswa_id?._id ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/20'}`}>
                           <td className="py-4 px-6 align-middle">
                             <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{p.mahasiswa_id?.nama_lengkap}</p>
-                            <p className="text-xs text-slate-500 font-medium">{p.mahasiswa_id?.nim_nidn}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{p.mahasiswa_id?.nim_nidn}</p>
                           </td>
                           <td className="py-4 px-6 align-middle">
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                               {p.detail_tempat?.nama || p.posisi_id?.mitra_id?.nama_instansi || '-'}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
                               {p.detail_tempat?.posisi || p.posisi_id?.nama_posisi || '-'}
                             </p>
                           </td>

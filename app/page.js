@@ -10,12 +10,12 @@ export default function Home() {
 
   const getDashboardUrl = () => {
     if (!session || !session.user) return '/login';
-    if (session.user.role === 'admin_prodi') return '/admin';
+    if (['admin_prodi', 'super_admin', 'admin'].includes(session.user.role)) return '/admin';
     return `/${session.user.role}`;
   };
 
   return (
-    <main className="bg-slate-50 text-slate-800 font-sans antialiased bg-light-grid min-h-screen">
+    <main className="bg-slate-50 dark:bg-[#0F172A] text-slate-800 dark:text-slate-100 font-sans antialiased bg-light-grid min-h-screen">
       
       {/* BAGIAN ATAS: NAVY BLUE (HERO SECTION) */}
       <div className="bg-[#0F172A] relative overflow-hidden pb-32">
@@ -62,7 +62,7 @@ export default function Home() {
                   localStorage.removeItem('target_magang');
                   window.location.href = getDashboardUrl();
                 }} 
-                className="px-8 py-3.5 rounded-lg bg-blue-500 hover:bg-blue-400 text-slate-900 font-bold text-lg transition-all shadow-lg shadow-blue-500/30"
+                className="px-8 py-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-all shadow-lg shadow-blue-600/30 cursor-pointer"
               >
                 {status === 'authenticated' ? 'Cari Posisi' : 'Cari Posisi'}
               </button>
@@ -76,39 +76,39 @@ export default function Home() {
 
       {/* AREA KONTEN BAWAH */}
       <section className="w-full px-8 lg:px-16 xl:px-24 -mt-24 relative z-20 pb-16">
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_rgb(0,0,0,0.06)] p-10 lg:p-16 border border-white/50">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_rgb(0,0,0,0.06)] dark:shadow-none p-10 lg:p-16 border border-white/50 dark:border-slate-700/80">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Apa itu Magang Berdampak STIMI YAPMI ?</h2>
+            <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">Apa itu Magang Berdampak STIMI YAPMI ?</h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
             {/* Card 1 */}
-            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
+            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900/60 border border-slate-100 dark:border-slate-700/80 hover:border-blue-200 dark:hover:border-blue-500/50 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
               <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none group-hover:text-blue-500 group-hover:opacity-10 transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-12">🎓</div>
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🎓</div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">Bagi Mahasiswa</h3>
-                <p className="text-slate-600 text-base leading-relaxed">Mendapatkan pengalaman nyata di dunia industri, mengembangkan soft skill, dan membangun portofolio profesional sebelum lulus.</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Bagi Mahasiswa</h3>
+                <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed">Mendapatkan pengalaman nyata di dunia industri, mengembangkan soft skill, dan membangun portofolio profesional sebelum lulus.</p>
               </div>
             </div>
             
             {/* Card 2 */}
-            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
+            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900/60 border border-slate-100 dark:border-slate-700/80 hover:border-blue-200 dark:hover:border-blue-500/50 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
               <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none group-hover:text-blue-500 group-hover:opacity-10 transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-12">🏛️</div>
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🏛️</div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">Bagi Kampus</h3>
-                <p className="text-slate-600 text-base leading-relaxed">Memperluas jaringan kemitraan institusi, memastikan relevansi kurikulum dengan kebutuhan industri, dan memperkuat data lulusan.</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Bagi Kampus</h3>
+                <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed">Memperluas jaringan kemitraan institusi, memastikan relevansi kurikulum dengan kebutuhan industri, dan memperkuat data lulusan.</p>
               </div>
             </div>
             
             {/* Card 3 */}
-            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
+            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900/60 border border-slate-100 dark:border-slate-700/80 hover:border-blue-200 dark:hover:border-blue-500/50 transition-all duration-500 group hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)] hover:-translate-y-2">
               <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none group-hover:text-blue-500 group-hover:opacity-10 transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-12">🎯</div>
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">🎯</div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">Implementasi OBE</h3>
-                <p className="text-slate-600 text-base leading-relaxed">Mendukung Outcome-Based Education melalui konversi SKS yang terukur berdasarkan capaian kinerja mahasiswa di lapangan.</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Implementasi OBE</h3>
+                <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed">Mendukung Outcome-Based Education melalui konversi SKS yang terukur berdasarkan capaian kinerja mahasiswa di lapangan.</p>
               </div>
             </div>
           </div>
@@ -118,8 +118,8 @@ export default function Home() {
       {/* ETALASE PERUSAHAAN & POSISI */}
       <section className="w-full px-8 lg:px-16 xl:px-24 pb-24 relative z-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Temukan Lokasi Magang</h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">Temukan Lokasi Magang</h2>
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
             Pilih instansi mitra yang sesuai dengan minat dan konsentrasi program studi Anda. Berdampaklah bagi industri dan masyarakat luas bersama STIMI YAPMI.
           </p>
         </div>

@@ -160,6 +160,36 @@ function ImpersonationBanner({ session }) {
 
 // ═══════════════════════ MENU CONFIG ═══════════════════════
 const MENU_CONFIG = {
+  super_admin: {
+    greeting: "Super Administrator",
+    subtitle: "Kendali penuh atas seluruh sistem, konfigurasi, dan manajemen pengguna.",
+    menus: [
+      { name: "Manajemen Pengguna", href: "/admin/pengguna", icon: "👥", desc: "Kelola akun Mahasiswa, DPL, dan Mentor.", color: "from-blue-500 to-blue-600" },
+      { name: "Master Data", href: "/admin/master-data", icon: "🗂️", desc: "Kelola Instansi Mitra, Posisi, dan Matkul.", color: "from-indigo-500 to-indigo-600" },
+      { name: "Master DPL", href: "/admin/dpl", icon: "👨‍🏫", desc: "Kelola dosen pembimbing & bantuan akses.", color: "from-blue-600 to-indigo-600" },
+      { name: "Validasi dan Data Pengajuan", href: "/admin/validasi", icon: "📋", desc: "Persetujuan magang & plotting DPL.", color: "from-emerald-500 to-emerald-600" },
+      { name: "Monitoring Magang", href: "/admin/monitoring", icon: "👁️", desc: "Pantau logbook dan kendala lapangan.", color: "from-amber-500 to-amber-600" },
+      { name: "Rekapitulasi Nilai", href: "/admin/rekapitulasi", icon: "⭐", desc: "Hasil akhir dan konversi SKS.", color: "from-purple-500 to-purple-600" },
+      { name: "Arsip & Dokumen", href: "/admin/arsip", icon: "🖨️", desc: "Cetak surat pengantar & sertifikat.", color: "from-rose-500 to-rose-600" },
+      { name: "Sinkronisasi PDDikti", href: "/admin/sinkronisasi", icon: "☁️", desc: "Ekspor data pelaporan PDDikti.", color: "from-cyan-500 to-cyan-600" },
+      { name: "Pengaturan Sistem", href: "/admin/settings", icon: "⚙️", desc: "Konfigurasi aplikasi dan periode.", color: "from-slate-500 to-slate-600" },
+    ],
+  },
+  admin: {
+    greeting: "Administrator",
+    subtitle: "Kelola master data, monitoring seluruh aktivitas magang, dan pantau DPL serta Mahasiswa.",
+    menus: [
+      { name: "Manajemen Pengguna", href: "/admin/pengguna", icon: "👥", desc: "Kelola akun Mahasiswa, DPL, dan Mentor.", color: "from-blue-500 to-blue-600" },
+      { name: "Master Data", href: "/admin/master-data", icon: "🗂️", desc: "Kelola Instansi Mitra, Posisi, dan Matkul.", color: "from-indigo-500 to-indigo-600" },
+      { name: "Master DPL", href: "/admin/dpl", icon: "👨‍🏫", desc: "Kelola dosen pembimbing & bantuan akses.", color: "from-blue-600 to-indigo-600" },
+      { name: "Validasi dan Data Pengajuan", href: "/admin/validasi", icon: "📋", desc: "Persetujuan magang & plotting DPL.", color: "from-emerald-500 to-emerald-600" },
+      { name: "Monitoring Magang", href: "/admin/monitoring", icon: "👁️", desc: "Pantau logbook dan kendala lapangan.", color: "from-amber-500 to-amber-600" },
+      { name: "Rekapitulasi Nilai", href: "/admin/rekapitulasi", icon: "⭐", desc: "Hasil akhir dan konversi SKS.", color: "from-purple-500 to-purple-600" },
+      { name: "Arsip & Dokumen", href: "/admin/arsip", icon: "🖨️", desc: "Cetak surat pengantar & sertifikat.", color: "from-rose-500 to-rose-600" },
+      { name: "Sinkronisasi PDDikti", href: "/admin/sinkronisasi", icon: "☁️", desc: "Ekspor data pelaporan PDDikti.", color: "from-cyan-500 to-cyan-600" },
+      { name: "Pengaturan Sistem", href: "/admin/settings", icon: "⚙️", desc: "Konfigurasi aplikasi dan periode.", color: "from-slate-500 to-slate-600" },
+    ],
+  },
   admin_prodi: {
     greeting: "Admin & Prodi",
     subtitle: "Kelola master data, monitoring seluruh aktivitas magang, dan pantau DPL serta Mahasiswa.",

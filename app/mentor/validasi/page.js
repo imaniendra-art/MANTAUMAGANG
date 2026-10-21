@@ -496,7 +496,7 @@ export default function MentorValidasi() {
                        <img src={doc.file} alt="" className="object-contain w-full h-full" />
                     )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                      <span className="bg-white/90 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Buka File</span>
+                      <span className="bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Buka File</span>
                     </div>
                   </div>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed text-center">

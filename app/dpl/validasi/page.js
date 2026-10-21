@@ -269,12 +269,12 @@ export default function DplValidasi() {
                                         {/* Validation Status / Actions */}
                                         {log.status_validasi === 'menunggu_mentor' && (
                                           <>
-                                            <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                                               <span>⏳</span> Menunggu Mentor
                                             </span>
                                             <button
                                               onClick={() => handleCopyMagicLink(log._id, mhsName)}
-                                              className="text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap"
+                                              className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap"
                                               title="Salin Link Ajaib"
                                             >
                                               <span>🔗</span> Salin Link Ajaib
@@ -463,7 +463,7 @@ export default function DplValidasi() {
                        <img src={doc.file} alt="" className="object-contain w-full h-full" />
                     )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                      <span className="bg-white/90 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Buka File</span>
+                      <span className="bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Buka File</span>
                     </div>
                   </div>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed text-center">

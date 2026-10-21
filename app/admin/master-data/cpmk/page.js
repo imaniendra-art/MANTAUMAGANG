@@ -49,52 +49,52 @@ export default function CpmkMasterData() {
   return (
     <DashboardLayout title="Master Data CPMK & AI Translator">
       <div className="space-y-6 max-w-5xl mx-auto">
-        <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl mb-8">
-          <h2 className="text-xl font-black text-indigo-900 mb-2">✨ AI Translator CPMK</h2>
-          <p className="text-sm text-indigo-700 leading-relaxed font-medium">
+        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 p-6 rounded-2xl mb-8">
+          <h2 className="text-xl font-black text-indigo-900 dark:text-indigo-200 mb-2">✨ AI Translator CPMK</h2>
+          <p className="text-sm text-indigo-700 dark:text-indigo-300 leading-relaxed font-medium">
             Seringkali bahasa akademis sulit dipahami oleh mahasiswa saat magang. Gunakan tombol <strong>Generate Saran AI</strong> pada setiap indikator di bawah ini untuk menerjemahkan bahasa dosen menjadi contoh kegiatan lapangan yang praktis. Saran ini akan sangat membantu AI Sistem saat menilai Logbook Harian mahasiswa!
           </p>
         </div>
 
         {loading ? (
           <div className="animate-pulse flex flex-col gap-4">
-            <div className="h-32 bg-slate-200 rounded-2xl"></div>
+            <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
           </div>
         ) : (
           paket.map((p) => (
-            <div key={p._id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-              <div className="p-6 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <div key={p._id} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-8">
+              <div className="p-6 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-800">{p.nama_paket}</h3>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Skema: <span className="uppercase text-slate-700">{p.jenis_skema}</span></p>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-white">{p.nama_paket}</h3>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Skema: <span className="uppercase text-slate-700 dark:text-slate-300 font-bold">{p.jenis_skema}</span></p>
                 </div>
               </div>
               
               <div className="p-6 space-y-8">
                 {p.mata_kuliah?.map((mk) => (
-                  <div key={mk._id} className="border border-slate-200 rounded-2xl overflow-hidden">
-                    <div className="bg-slate-100 p-4 border-b border-slate-200">
-                      <p className="font-bold text-slate-800">{mk.kode} - {mk.nama}</p>
-                      <p className="text-xs text-slate-500 font-medium">{mk.sks} SKS</p>
+                  <div key={mk._id} className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+                    <div className="bg-slate-100 dark:bg-slate-700/60 p-4 border-b border-slate-200 dark:border-slate-700">
+                      <p className="font-bold text-slate-800 dark:text-white">{mk.kode} - {mk.nama}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{mk.sks} SKS</p>
                     </div>
                     
                     <div className="p-4 space-y-6">
                       {mk.cpmk?.map((c) => (
-                        <div key={c._id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative">
-                          <p className="font-bold text-slate-800 mb-3 pr-40">{c.nama_cpmk}</p>
+                        <div key={c._id} className="bg-white dark:bg-slate-800/90 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm relative">
+                          <p className="font-bold text-slate-800 dark:text-slate-100 mb-3 pr-40">{c.nama_cpmk}</p>
                           
                           <div className="mb-4">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Indikator Akademik:</p>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Indikator Akademik:</p>
                             <ul className="list-disc pl-5 space-y-1">
                               {c.indikator?.map((ind, i) => (
-                                <li key={i} className="text-sm text-slate-600 font-medium">{ind}</li>
+                                <li key={i} className="text-sm text-slate-600 dark:text-slate-300 font-medium">{ind}</li>
                               ))}
                             </ul>
                           </div>
 
-                          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                          <div className="bg-amber-50 dark:bg-amber-950/25 rounded-xl p-4 border border-amber-100 dark:border-amber-900/40">
                             <div className="flex justify-between items-start mb-2">
-                              <p className="text-xs font-black text-amber-800 uppercase tracking-wider">💡 Saran Kegiatan (Bahasa Lapangan):</p>
+                              <p className="text-xs font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider">💡 Saran Kegiatan (Bahasa Lapangan):</p>
                               <button 
                                 onClick={() => handleGenerateAI(p._id, mk._id, c._id)}
                                 disabled={generating}
@@ -105,11 +105,11 @@ export default function CpmkMasterData() {
                             </div>
                             
                             {c.saran_kegiatan ? (
-                              <div className="text-sm text-slate-700 whitespace-pre-line font-medium leading-relaxed">
+                              <div className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-line font-medium leading-relaxed">
                                 {c.saran_kegiatan}
                               </div>
                             ) : (
-                              <p className="text-sm text-slate-400 italic">Belum ada saran kegiatan yang di-generate. Klik tombol di atas untuk membuat.</p>
+                              <p className="text-sm text-slate-400 dark:text-slate-500 italic">Belum ada saran kegiatan yang di-generate. Klik tombol di atas untuk membuat.</p>
                             )}
                           </div>
                         </div>

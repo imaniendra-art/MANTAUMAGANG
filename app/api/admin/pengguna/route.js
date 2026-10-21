@@ -10,14 +10,14 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 async function isAuthorizedAdmin() {
   const session = await getServerSession(authOptions);
-  return session?.user?.role === 'admin_prodi';
+  return ['admin_prodi', 'super_admin', 'admin'].includes(session?.user?.role) || session?.user?.email === 'imaniendra@gmail.com';
 }
 
 export async function GET(req) {
   await dbConnect();
   try {
     if (!await isAuthorizedAdmin()) {
-      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Administrator." }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -31,7 +31,13 @@ export async function GET(req) {
       );
     }
     
-    let users = await User.find({ role }).sort({ createdAt: -1 }).lean();
+    let query = { role };
+    if (role === 'admin_prodi') {
+      // Ambil seluruh akun jajaran admin: admin_prodi, super_admin, admin
+      query = { role: { $in: ['admin_prodi', 'super_admin', 'admin'] } };
+    }
+    
+    let users = await User.find(query).sort({ createdAt: -1 }).lean();
     
     if (role === 'dpl') {
       users = await Promise.all(users.map(async (dpl) => {
@@ -79,6 +85,12 @@ export async function POST(req) {
     }
 
     const targetRole = role || 'dpl';
+
+    const session = await getServerSession(authOptions);
+    const isSuperAdmin = session?.user?.role === 'super_admin' || session?.user?.email === 'imaniendra@gmail.com';
+    if (targetRole === 'super_admin' && !isSuperAdmin) {
+      return NextResponse.json({ error: "Hanya Super Admin yang dapat menambahkan akun Super Admin." }, { status: 403 });
+    }
 
     // Nomor HP wajib untuk role selain mahasiswa
     if (targetRole !== 'mahasiswa' && !nomor_hp) {
@@ -129,8 +141,11 @@ export async function PATCH(req) {
   await dbConnect();
   try {
     if (!await isAuthorizedAdmin()) {
-      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Administrator." }, { status: 401 });
     }
+
+    const session = await getServerSession(authOptions);
+    const isSuperAdmin = session?.user?.role === 'super_admin' || session?.user?.email === 'imaniendra@gmail.com';
 
     const data = await req.json();
     const { id, action, ...updateData } = data;
@@ -151,6 +166,16 @@ export async function PATCH(req) {
       
       return NextResponse.json({ message: "Password berhasil direset ke Nomor HP/ID" });
     } else {
+      // Jika mengubah role admin
+      if (updateData.role) {
+        if (!isSuperAdmin) {
+          return NextResponse.json({ error: "Hanya Super Admin yang berhak mengubah tingkatan role admin." }, { status: 403 });
+        }
+        if (!['super_admin', 'admin_prodi', 'admin'].includes(updateData.role)) {
+          return NextResponse.json({ error: "Role admin yang dipilih tidak valid." }, { status: 400 });
+        }
+      }
+
       const updatedUser = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true });
       if (!updatedUser) return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
       return NextResponse.json({ message: "Data berhasil diperbarui", user: updatedUser });
@@ -164,8 +189,11 @@ export async function DELETE(req) {
   await dbConnect();
   try {
     if (!await isAuthorizedAdmin()) {
-      return NextResponse.json({ error: "Unauthorized. Akses khusus Admin Prodi." }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized. Akses khusus Administrator." }, { status: 401 });
     }
+
+    const session = await getServerSession(authOptions);
+    const isSuperAdmin = session?.user?.role === 'super_admin' || session?.user?.email === 'imaniendra@gmail.com';
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -174,11 +202,20 @@ export async function DELETE(req) {
       return NextResponse.json({ error: "ID pengguna diperlukan" }, { status: 400 });
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
-    if (!deletedUser) {
+    const targetUser = await User.findById(id);
+    if (!targetUser) {
       return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
     }
 
+    if (session?.user?.id === targetUser._id.toString()) {
+      return NextResponse.json({ error: "Anda tidak dapat menghapus akun Anda sendiri saat sedang aktif." }, { status: 400 });
+    }
+
+    if (targetUser.role === 'super_admin' && !isSuperAdmin) {
+      return NextResponse.json({ error: "Hanya Super Admin yang berhak menghapus akun Super Admin." }, { status: 403 });
+    }
+
+    await User.findByIdAndDelete(id);
     return NextResponse.json({ message: "Pengguna berhasil dihapus" }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

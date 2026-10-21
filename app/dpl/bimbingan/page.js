@@ -387,7 +387,7 @@ export default function DaftarBimbinganPage() {
                   id="assignToGroup"
                   checked={assignToGroup}
                   onChange={e => setAssignToGroup(e.target.checked)}
-                  className="mt-1 w-4 h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500"
+                  className="mt-1 w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="assignToGroup" className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed cursor-pointer">
                   Terapkan mentor ini secara otomatis untuk <strong>seluruh mahasiswa bimbingan saya</strong> yang magang di lokasi instansi yang sama.

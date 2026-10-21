@@ -3,8 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import * as XLSX from "xlsx";
+import { useSession } from "next-auth/react";
 
 export default function ManajemenPenggunaPage() {
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === 'super_admin' || session?.user?.email === 'imaniendra@gmail.com';
+
   const [activeTab, setActiveTab] = useState("mahasiswa");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +23,7 @@ export default function ManajemenPenggunaPage() {
   // Add User Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
-  const [addForm, setAddForm] = useState({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)" });
+  const [addForm, setAddForm] = useState({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)", role: "" });
 
   // Edit User Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -33,7 +37,8 @@ export default function ManajemenPenggunaPage() {
     email: "",
     program_studi: "",
     konsentrasi: "",
-    kegiatan: ""
+    kegiatan: "",
+    role: ""
   });
 
   const ITEMS_PER_PAGE = 10;
@@ -191,10 +196,11 @@ export default function ManajemenPenggunaPage() {
     e.preventDefault();
     setAddingUser(true);
     try {
+      const selectedRole = activeTab === 'admin_prodi' ? (addForm.role || 'admin_prodi') : activeTab;
       const res = await fetch('/api/admin/pengguna', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...addForm, role: activeTab })
+        body: JSON.stringify({ ...addForm, role: selectedRole })
       });
       const data = await res.json();
       
@@ -207,7 +213,7 @@ export default function ManajemenPenggunaPage() {
             : "Pengguna berhasil ditambahkan. Password default sama dengan NIM/ID."
         );
         setShowAddModal(false);
-        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)" });
+        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)", role: "" });
         fetchUsers(activeTab);
       }
     } catch (error) {
@@ -227,7 +233,8 @@ export default function ManajemenPenggunaPage() {
       email: user.email || "",
       program_studi: user.program_studi || "",
       konsentrasi: user.konsentrasi || "",
-      kegiatan: user.kegiatan || ""
+      kegiatan: user.kegiatan || "",
+      role: user.role || (activeTab === 'admin_prodi' ? 'admin_prodi' : '')
     });
     setShowEditModal(true);
   };
@@ -283,6 +290,8 @@ export default function ManajemenPenggunaPage() {
     let headers = [];
     if (activeTab === 'mahasiswa') {
       headers = ['NIM', 'Nama Mahasiswa', 'Prodi', 'Konsentrasi', 'Kegiatan', 'Nomor HP', 'Email', 'Status Sandi'];
+    } else if (activeTab === 'admin_prodi') {
+      headers = ['ID', 'Nama Lengkap', 'Tingkat Role', 'Email', 'Nomor HP'];
     } else {
       headers = ['NIDN/ID', 'Nama Lengkap', 'Email'];
     }
@@ -304,6 +313,11 @@ export default function ManajemenPenggunaPage() {
         row.push(escape(user.nomor_hp));
         row.push(escape(user.email));
         row.push(escape(user.isFirstLogin !== false ? 'Belum Diatur' : 'Selesai Setup'));
+      } else if (activeTab === 'admin_prodi') {
+        const roleLabel = user.role === 'super_admin' ? 'Super Admin' : (user.role === 'admin_prodi' ? 'Admin Prodi' : 'Admin');
+        row.push(escape(roleLabel));
+        row.push(escape(user.email));
+        row.push(escape(user.nomor_hp));
       } else {
         row.push(escape(user.email));
       }
@@ -427,7 +441,7 @@ export default function ManajemenPenggunaPage() {
             {loading ? (
               <div className="flex justify-center items-center h-48 animate-pulse text-slate-400 font-bold">Memuat data...</div>
             ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
                 {searchTerm ? 'Pencarian tidak menemukan hasil.' : 'Belum ada data untuk role ini.'}
               </div>
             ) : (
@@ -467,6 +481,15 @@ export default function ManajemenPenggunaPage() {
                         >
                           {activeTab === 'mentor' ? 'Instansi / Lokasi' : (activeTab === 'admin_prodi' ? 'Email' : 'Prodi')} {getSortIcon(activeTab === 'mentor' ? 'lokasi' : (activeTab === 'admin_prodi' ? 'email' : 'program_studi'))}
                         </th>
+                        {activeTab === 'admin_prodi' && (
+                          <th 
+                            scope="col" 
+                            onClick={() => requestSort('role')}
+                            className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            Tingkat Role {getSortIcon('role')}
+                          </th>
+                        )}
                         {activeTab === 'mahasiswa' && (
                           <th 
                             scope="col" 
@@ -505,7 +528,7 @@ export default function ManajemenPenggunaPage() {
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                       {currentUsers.map((user, idx) => (
                         <tr key={user._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500">{startIndex + idx + 1}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400">{startIndex + idx + 1}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.nim_nidn}</td>
                           {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && activeTab !== 'admin_prodi' && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.nidn || '-'}</td>
@@ -514,6 +537,19 @@ export default function ManajemenPenggunaPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                             {activeTab === 'mentor' ? (user.lokasi || '-') : (activeTab === 'admin_prodi' ? (user.email || '-') : (user.program_studi || '-'))}
                           </td>
+                          {activeTab === 'admin_prodi' && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${
+                                user.role === 'super_admin'
+                                  ? 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700'
+                                  : (user.role === 'admin_prodi'
+                                      ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700'
+                                      : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700')
+                              }`}>
+                                {user.role === 'super_admin' ? '⭐ Super Admin' : (user.role === 'admin_prodi' ? '🏛️ Admin Prodi' : '🛡️ Admin')}
+                              </span>
+                            </td>
+                          )}
                           {activeTab === 'mahasiswa' && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{user.konsentrasi || '-'}</td>
                           )}
@@ -656,7 +692,7 @@ export default function ManajemenPenggunaPage() {
               </div>
 
               {importResult && (
-                <div className={`mb-6 p-5 rounded-xl text-sm font-bold border ${importResult.error ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                <div className={`mb-6 p-5 rounded-xl text-sm font-bold border ${importResult.error ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50'}`}>
                   {importResult.error ? (
                     <p>⚠️ {importResult.error}</p>
                   ) : (
@@ -664,7 +700,7 @@ export default function ManajemenPenggunaPage() {
                       <p>✅ {importResult.message}</p>
                       <p className="font-normal mt-1">Berhasil memproses: {importResult.inserted} data.</p>
                       {importResult.errors?.length > 0 && (
-                        <div className="mt-3 text-red-600 font-normal max-h-32 overflow-y-auto bg-white p-2 rounded">
+                        <div className="mt-3 text-red-600 dark:text-red-400 font-normal max-h-32 overflow-y-auto bg-white dark:bg-slate-900 p-2 rounded border border-red-200 dark:border-red-900/50">
                           <p className="font-bold mb-1">Gagal diproses ({importResult.errors.length}):</p>
                           <ul className="list-disc pl-4 text-xs space-y-1">
                             {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
@@ -696,7 +732,7 @@ export default function ManajemenPenggunaPage() {
                   <button 
                     type="button" 
                     onClick={closeModal}
-                    className="px-6 py-3 font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-xl transition-all"
+                    className="px-6 py-3 font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all"
                   >
                     Tutup
                   </button>
@@ -750,6 +786,22 @@ export default function ManajemenPenggunaPage() {
                     className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     placeholder="Contoh: 09123456"
                   />
+                </div>
+              )}
+              {activeTab === 'admin_prodi' && isSuperAdmin && (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    Tingkat Role Admin
+                  </label>
+                  <select
+                    value={addForm.role || 'admin_prodi'}
+                    onChange={(e) => setAddForm({...addForm, role: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-bold"
+                  >
+                    <option value="admin_prodi">🏛️ Admin Prodi (Default)</option>
+                    <option value="super_admin">⭐ Super Admin</option>
+                    <option value="admin">🛡️ Admin (Operasional)</option>
+                  </select>
                 </div>
               )}
               <div>
@@ -814,7 +866,7 @@ export default function ManajemenPenggunaPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowAddModal(false)}
-                  className="px-6 py-3 font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-xl transition-all"
+                  className="px-6 py-3 font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all"
                 >
                   Batal
                 </button>
@@ -901,6 +953,37 @@ export default function ManajemenPenggunaPage() {
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {activeTab === 'admin_prodi' && (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    Tingkat Hak Akses Admin {isSuperAdmin ? '' : <span className="text-xs font-normal text-slate-400">(Hanya Super Admin yang dapat mengubah)</span>}
+                  </label>
+                  {isSuperAdmin ? (
+                    <select 
+                      value={editForm.role || 'admin_prodi'}
+                      onChange={(e) => setEditForm({...editForm, role: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-bold"
+                    >
+                      <option value="super_admin">⭐ Super Admin (Akses Penuh + Kelola Role Admin)</option>
+                      <option value="admin_prodi">🏛️ Admin Prodi (Admin Program Studi)</option>
+                      <option value="admin">🛡️ Admin (Admin Operasional / Staf)</option>
+                    </select>
+                  ) : (
+                    <input 
+                      type="text" 
+                      disabled
+                      value={editForm.role === 'super_admin' ? 'Super Admin' : (editForm.role === 'admin_prodi' ? 'Admin Prodi' : 'Admin')}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 cursor-not-allowed font-bold"
+                    />
+                  )}
+                  {isSuperAdmin && (
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1.5 font-medium">
+                      👑 Sebagai Super Admin, Anda memiliki wewenang untuk menentukan tingkatan hak akses akun ini.
+                    </p>
+                  )}
+                </div>
+              )}
               
               {activeTab === 'mahasiswa' && (
                 <>
@@ -938,7 +1021,7 @@ export default function ManajemenPenggunaPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowEditModal(false)}
-                  className="px-6 py-3 font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-xl transition-all"
+                  className="px-6 py-3 font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all"
                 >
                   Batal
                 </button>
