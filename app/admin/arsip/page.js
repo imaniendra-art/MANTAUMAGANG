@@ -130,7 +130,12 @@ export default function ArsipPage() {
                               <p className="text-[10px] text-slate-500 dark:text-slate-400">Berjalan di {mitra.nama_instansi || item.detail_tempat?.nama || '-'}</p>
                             </div>
                             {item.file_cv_path ? (
-                              <a href={item.file_cv_path} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors">
+                              <a 
+                                href={item.file_cv_path.startsWith('http') ? item.file_cv_path : `/api/view-file?path=${encodeURIComponent(item.file_cv_path)}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors"
+                              >
                                 Lihat Dokumen
                               </a>
                             ) : (

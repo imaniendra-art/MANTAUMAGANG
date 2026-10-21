@@ -298,7 +298,13 @@ export default function ValidasiPengajuan() {
                             </td>
                             <td className="py-4 px-4 text-center">
                               {p.file_cv_path ? (
-                                <a href={p.file_cv_path.startsWith('/') ? p.file_cv_path : '/' + p.file_cv_path} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors" title="Lihat CV">
+                                <a 
+                                  href={`/api/view-file?path=${encodeURIComponent(p.file_cv_path)}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="inline-flex items-center justify-center p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors" 
+                                  title="Lihat CV"
+                                >
                                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                   </svg>
