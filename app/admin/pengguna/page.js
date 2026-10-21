@@ -19,7 +19,7 @@ export default function ManajemenPenggunaPage() {
   // Add User Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
-  const [addForm, setAddForm] = useState({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "" });
+  const [addForm, setAddForm] = useState({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)" });
 
   // Edit User Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -201,9 +201,13 @@ export default function ManajemenPenggunaPage() {
       if (!res.ok) {
         alert(data.error || "Gagal menambahkan pengguna.");
       } else {
-        alert("Pengguna berhasil ditambahkan. Password default sama dengan NIM/ID.");
+        alert(
+          activeTab === 'mahasiswa'
+            ? "Mahasiswa berhasil ditambahkan! Password default sama dengan NIM mahasiswa."
+            : "Pengguna berhasil ditambahkan. Password default sama dengan NIM/ID."
+        );
         setShowAddModal(false);
-        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "" });
+        setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)" });
         fetchUsers(activeTab);
       }
     } catch (error) {
@@ -374,10 +378,22 @@ export default function ManajemenPenggunaPage() {
                   >
                     📥 Import Data
                   </button>
+                  <button 
+                    onClick={() => {
+                      setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "Manajemen (S1)" });
+                      setShowAddModal(true);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                  >
+                    ➕ Tambah Mahasiswa
+                  </button>
                 </>
               ) : (
                 <button 
-                  onClick={() => setShowAddModal(true)}
+                  onClick={() => {
+                    setAddForm({ nim_nidn: "", nidn: "", nama_lengkap: "", nomor_hp: "", email: "", program_studi: "" });
+                    setShowAddModal(true);
+                  }}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
                 >
                   ➕ Tambah Pengguna
@@ -704,14 +720,14 @@ export default function ManajemenPenggunaPage() {
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg overflow-hidden relative scale-in-95 duration-200">
             <div className="p-8 border-b border-slate-200 dark:border-slate-700">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Tambah {activeTab === 'dpl' ? 'DPL' : (activeTab === 'mentor' ? 'Mentor' : 'Admin')}
+                Tambah {activeTab === 'dpl' ? 'DPL' : (activeTab === 'mentor' ? 'Mentor' : (activeTab === 'mahasiswa' ? 'Mahasiswa' : 'Admin'))}
               </h2>
             </div>
             
             <form onSubmit={handleAddSubmit} className="p-8 bg-slate-50 dark:bg-slate-900/50 space-y-5">
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  ID (Username)
+                  {activeTab === 'mahasiswa' ? 'NIM (Nomor Induk Mahasiswa)' : 'ID (Username)'}
                 </label>
                 <input 
                   type="text" 
@@ -719,7 +735,7 @@ export default function ManajemenPenggunaPage() {
                   value={addForm.nim_nidn}
                   onChange={(e) => setAddForm({...addForm, nim_nidn: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  placeholder="Contoh: riswan"
+                  placeholder={activeTab === 'mahasiswa' ? "Contoh: 246120100" : "Contoh: riswan"}
                 />
               </div>
               {activeTab !== 'mahasiswa' && activeTab !== 'mentor' && activeTab !== 'admin_prodi' && (
@@ -738,7 +754,7 @@ export default function ManajemenPenggunaPage() {
               )}
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Nama Lengkap
+                  Nama Lengkap {activeTab === 'mahasiswa' ? 'Mahasiswa' : ''}
                 </label>
                 <input 
                   type="text" 
@@ -746,16 +762,31 @@ export default function ManajemenPenggunaPage() {
                   value={addForm.nama_lengkap}
                   onChange={(e) => setAddForm({...addForm, nama_lengkap: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  placeholder="Masukkan nama lengkap"
+                  placeholder={activeTab === 'mahasiswa' ? "Contoh: Muhammad Budi" : "Masukkan nama lengkap"}
                 />
               </div>
+              {activeTab === 'mahasiswa' && (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    Program Studi
+                  </label>
+                  <input 
+                    type="text" 
+                    required
+                    value={addForm.program_studi || "Manajemen (S1)"}
+                    onChange={(e) => setAddForm({...addForm, program_studi: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    placeholder="Manajemen (S1)"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Nomor HP
+                  Nomor HP {activeTab === 'mahasiswa' && <span className="text-xs font-normal text-slate-500 dark:text-slate-400">(Opsional - dapat diisi mahasiswa saat aktivasi)</span>}
                 </label>
                 <input 
                   type="text" 
-                  required
+                  required={activeTab !== 'mahasiswa'}
                   value={addForm.nomor_hp}
                   onChange={(e) => setAddForm({...addForm, nomor_hp: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -764,16 +795,21 @@ export default function ManajemenPenggunaPage() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Email
+                  Email {activeTab === 'mahasiswa' && <span className="text-xs font-normal text-slate-500 dark:text-slate-400">(Opsional)</span>}
                 </label>
                 <input 
                   type="email" 
                   value={addForm.email}
                   onChange={(e) => setAddForm({...addForm, email: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  placeholder="opsional@email.com"
+                  placeholder={activeTab === 'mahasiswa' ? (addForm.nim_nidn ? `${addForm.nim_nidn}@student.stimiyapmi.ac.id (Default)` : "nim@student.stimiyapmi.ac.id (Default)") : "opsional@email.com"}
                 />
               </div>
+              {activeTab === 'mahasiswa' && (
+                <div className="p-3.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                  💡 <strong>Info Kredensial:</strong> Password awal otomatis diset sama dengan <strong>NIM</strong>. Mahasiswa wajib melengkapi profil (konsentrasi, kegiatan, sandi baru) saat pertama kali login.
+                </div>
+              )}
               <div className="mt-8 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-6">
                 <button 
                   type="button" 

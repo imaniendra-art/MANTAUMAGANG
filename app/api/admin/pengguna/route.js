@@ -72,30 +72,50 @@ export async function POST(req) {
     }
 
     const data = await req.json();
-    const { nim_nidn, nidn, nama_lengkap, nomor_hp, role } = data;
+    const { nim_nidn, nidn, nama_lengkap, nomor_hp, role, program_studi } = data;
 
-    if (!nim_nidn || !nama_lengkap || !nomor_hp) {
-      return NextResponse.json({ error: "NIM/ID, Nama Lengkap, dan Nomor HP wajib diisi" }, { status: 400 });
+    if (!nim_nidn || !nama_lengkap) {
+      return NextResponse.json({ error: "NIM/ID dan Nama Lengkap wajib diisi" }, { status: 400 });
     }
 
-    const existingUser = await User.findOne({ nim_nidn });
+    const targetRole = role || 'dpl';
+
+    // Nomor HP wajib untuk role selain mahasiswa
+    if (targetRole !== 'mahasiswa' && !nomor_hp) {
+      return NextResponse.json({ error: "Nomor HP wajib diisi" }, { status: 400 });
+    }
+
+    const cleanNim = nim_nidn.toString().trim();
+    const existingUser = await User.findOne({ nim_nidn: cleanNim });
 
     if (existingUser) {
       return NextResponse.json({ error: "NIM/ID sudah terdaftar" }, { status: 400 });
     }
 
+    if (data.email) {
+      const existingEmail = await User.findOne({ email: data.email.trim() });
+      if (existingEmail) {
+        return NextResponse.json({ error: "Email sudah digunakan oleh akun lain" }, { status: 400 });
+      }
+    }
+
     const salt = await bcrypt.genSalt(10);
-    const defaultPassword = role === 'mentor' ? nomor_hp : nim_nidn;
+    const defaultPassword = targetRole === 'mentor' ? nomor_hp : cleanNim;
     const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
+    const defaultEmail = targetRole === 'mahasiswa'
+      ? `${cleanNim}@student.stimiyapmi.ac.id`
+      : `${cleanNim}@mantau.local`;
+
     const newUser = await User.create({
-      nama_lengkap,
-      nim_nidn,
-      nidn,
-      nomor_hp,
-      email: data.email || `${nim_nidn}@mantau.local`, // Use provided email or fallback
+      nama_lengkap: nama_lengkap.trim(),
+      nim_nidn: cleanNim,
+      nidn: nidn ? nidn.trim() : undefined,
+      nomor_hp: nomor_hp ? nomor_hp.trim() : "",
+      email: data.email ? data.email.trim() : defaultEmail,
       password: hashedPassword,
-      role: role || 'dpl',
+      role: targetRole,
+      program_studi: targetRole === 'mahasiswa' ? (program_studi?.trim() || "Manajemen (S1)") : (program_studi?.trim() || undefined),
       isFirstLogin: true,
     });
 
