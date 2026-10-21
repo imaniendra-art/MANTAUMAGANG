@@ -46,7 +46,8 @@ export default function MasterData() {
     id: null, nama_posisi: "", konsentrasi: "SDM", kuota: 1, 
     deskripsi_pekerjaan: "", kriteria_kandidat: "", sistem_kerja: "WFO" 
   });
-  const [matkulForm, setMatkulForm] = useState({ kode: "", nama: "", sks: 3 });
+  const [selectedPaketFilter, setSelectedPaketFilter] = useState("all");
+  const [matkulForm, setMatkulForm] = useState({ kode: "", nama: "", sks: 3, kategori: "wajib", targetPaketId: "all" });
   const [cpmkForm, setCpmkForm] = useState({ nama_cpmk: "" });
   const [indikatorForm, setIndikatorForm] = useState({ indikator: "" });
 
@@ -245,16 +246,22 @@ export default function MasterData() {
   const handleMatkulSubmit = async (e) => {
     e.preventDefault();
     try {
-      const paketId = pakets[0]?._id;
-      if (!paketId) return showToast("Paket utama tidak ditemukan");
+      const paketId = matkulForm.targetPaketId || (selectedPaketFilter !== 'all' ? selectedPaketFilter : 'all');
       const res = await fetch('/api/paket-matkul', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'add_matkul', paketId, ...matkulForm })
+        body: JSON.stringify({ 
+          action: 'add_matkul', 
+          paketId, 
+          kode: matkulForm.kode,
+          nama: matkulForm.nama,
+          sks: matkulForm.sks,
+          kategori: matkulForm.kategori || 'wajib'
+        })
       });
       if (res.ok) {
         setShowAddMatkulModal(false);
-        setMatkulForm({ kode: "", nama: "", sks: 3 });
+        setMatkulForm({ kode: "", nama: "", sks: 3, kategori: "wajib", targetPaketId: "all" });
         showToast("Mata Kuliah berhasil ditambahkan!");
         fetchData();
       }
@@ -272,12 +279,16 @@ export default function MasterData() {
           action: 'edit_matkul',
           paketId: selectedMatkul.paketId,
           matkulId: selectedMatkul.matkulId,
-          ...matkulForm
+          kode: matkulForm.kode,
+          nama: matkulForm.nama,
+          sks: matkulForm.sks,
+          kategori: matkulForm.kategori || 'wajib',
+          cpmk: matkulForm.cpmk
         })
       });
       if (res.ok) {
         setShowEditMatkulModal(false);
-        setMatkulForm({ kode: "", nama: "", sks: 3 });
+        setMatkulForm({ kode: "", nama: "", sks: 3, kategori: "wajib", targetPaketId: "all" });
         showToast("Mata Kuliah berhasil diperbarui!");
         fetchData();
       }
@@ -380,13 +391,13 @@ export default function MasterData() {
     } catch (error) { console.error(error); }
   };
 
-  const handleDeleteMatkul = async (paketId, matkulId) => {
+  const handleDeleteMatkul = async (paketId, matkulId, kode) => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus Mata Kuliah ini? Tindakan ini tidak dapat dibatalkan.")) return;
     try {
       const res = await fetch('/api/paket-matkul', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_matkul', paketId, matkulId })
+        body: JSON.stringify({ action: 'delete_matkul', paketId, matkulId, kode })
       });
       if (res.ok) { showToast("Mata Kuliah berhasil dihapus!"); fetchData(); }
     } catch (error) { console.error(error); }
@@ -416,29 +427,69 @@ export default function MasterData() {
     } catch (error) { console.error(error); }
   };
 
-  // Ekstrak semua matkul untuk ditampilkan di UI
-  const allMatkuls = pakets.flatMap(paket => 
-    (paket.mata_kuliah || []).map(mk => ({ ...mk, paketId: paket._id, matkulId: mk._id }))
-  );
+  // Ekstrak matkul yang relevan sesuai filter paket yang aktif
+  const displayedMatkuls = React.useMemo(() => {
+    if (!pakets || pakets.length === 0) return [];
+    
+    if (selectedPaketFilter !== "all") {
+      const p = pakets.find(pkg => pkg._id === selectedPaketFilter || pkg.konsentrasi === selectedPaketFilter);
+      return (p?.mata_kuliah || []).map(mk => ({
+        ...mk,
+        paketId: p._id,
+        matkulId: mk._id,
+        nama_paket: p.nama_paket,
+        konsentrasi: p.konsentrasi
+      }));
+    }
+
+    // Jika 'all', kumpulkan semua matkul unik agar matkul wajib tidak berulang 3 kali
+    const seen = new Set();
+    const result = [];
+    for (const p of pakets) {
+      for (const mk of (p.mata_kuliah || [])) {
+        const cleanKode = (mk.kode || "").trim().toUpperCase();
+        if (!seen.has(cleanKode)) {
+          seen.add(cleanKode);
+          result.push({
+            ...mk,
+            paketId: p._id,
+            matkulId: mk._id,
+            nama_paket: p.nama_paket,
+            konsentrasi: mk.kategori === 'wajib' ? 'Semua' : p.konsentrasi
+          });
+        }
+      }
+    }
+    return result;
+  }, [pakets, selectedPaketFilter]);
+
+  const allMatkuls = displayedMatkuls;
 
   const getPetunjukSheet = () => {
     const sheetData = [
-      ["PETUNJUK PENGISIAN FORMAT EXCEL CAPAIAN PEMBELAJARAN (MAGANG BERDAMPAK)"],
+      ["PETUNJUK FORMAT EXCEL KURIKULUM KONVERSI OBE (STIMI YAPMI MAKASSAR)"],
       [],
-      ["Langkah 1:", "Isi 'Kode Mata Kuliah', 'Nama Mata Kuliah', 'SKS', dan 'Dosen Pengampu' pada baris yang telah disediakan."],
-      ["Langkah 2:", "Tentukan CPMK (Capaian Pembelajaran Mata Kuliah)."],
-      ["", "Contoh penulisan baris: CPMK 1: Mahasiswa mampu mengevaluasi strategi pemasaran digital."],
-      ["Langkah 3:", "Di bawah CPMK, berikan baris bertuliskan 'Indikator:'."],
-      ["Langkah 4:", "Di bawah baris 'Indikator:', jabarkan 3-5 Indikator (Aktivitas Nyata di lapangan) yang harus dicapai mahasiswa."],
-      ["", "PENTING: Gunakan bahasa yang mudah dipahami mahasiswa! Semakin spesifik kegiatan di lapangan, semakin mudah AI mencocokkan logbook mahasiswa."],
-      ["", "Contoh Indikator yang BAIK: 1. Membantu membuat konten sosial media."],
-      ["", "                            2. Merekap insight/statistik penjualan di Instagram."],
-      ["", "Contoh Indikator yang BURUK (Terlalu Akademis): 1. Memahami konsep segmentasi pasar."],
+      ["Langkah 1: Pengisian Atribut Dasar Mata Kuliah (Baris 1 - 6)"],
+      ["", "- 'Kode Mata Kuliah' : Contoh 'STY. 501', 'MNJ. 504'"],
+      ["", "- 'Nama Mata Kuliah' : Nama lengkap mata kuliah"],
+      ["", "- 'Kategori'         : Isi 'Wajib' atau 'Konsentrasi'"],
+      ["", "- 'Konsentrasi'      : Isi 'Semua' (jika Wajib), atau 'SDM' / 'Keuangan' / 'Pemasaran' (jika Konsentrasi)"],
+      ["", "- 'SKS'              : Jumlah SKS (contoh: 3 atau 2)"],
+      ["", "- 'Dosen Pengampu'   : Nama dosen pengampu (opsional)"],
       [],
-      ["CATATAN:", "Buat Sheet baru untuk setiap Mata Kuliah yang berbeda. Jangan ubah nama Sheet PETUNJUK ini."],
+      ["Langkah 2: Perumusan CPMK dan Indikator Lapangan"],
+      ["", "Setiap CPMK diawali baris dengan awalan 'CPMK 1:', 'CPMK 2:', dst."],
+      ["", "Di bawah setiap CPMK, tulis baris 'Indikator:' diikuti 2-5 butir aktivitas kerja riil di lapangan."],
+      ["", "Contoh Indikator yang BAIK (Aktivitas Konkret):"],
+      ["", "  1. Membantu rekapitulasi data absensi dan keterlambatan karyawan harian."],
+      ["", "  2. Mengoperasikan aplikasi HRIS untuk menginput permohonan cuti staf."],
+      [],
+      ["CATATAN PENTING:"],
+      ["- Buat 1 Sheet baru untuk setiap Mata Kuliah (nama Sheet gunakan Kode Mata Kuliah, contoh 'STY. 501')."],
+      ["- Jangan menghapus atau mengubah nama Sheet 'PETUNJUK' ini."]
     ];
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
-    ws['!cols'] = [{ wch: 15 }, { wch: 100 }];
+    ws['!cols'] = [{ wch: 15 }, { wch: 110 }];
     return ws;
   };
 
@@ -455,6 +506,8 @@ export default function MasterData() {
       
       sheetData.push(["Kode Mata Kuliah", mk.kode]);
       sheetData.push(["Nama Mata Kuliah", mk.nama]);
+      sheetData.push(["Kategori", mk.kategori === 'konsentrasi' ? "Konsentrasi" : "Wajib"]);
+      sheetData.push(["Konsentrasi", mk.konsentrasi || (mk.kategori === 'wajib' ? "Semua" : "")]);
       sheetData.push(["SKS", mk.sks]);
       sheetData.push(["Dosen Pengampu", mk.dosen_pengampu || ""]);
       sheetData.push([]);
@@ -482,8 +535,6 @@ export default function MasterData() {
       }
       
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      
-      // Auto-size columns slightly
       ws['!cols'] = [{ wch: 40 }, { wch: 80 }];
       
       let sheetName = mk.kode ? mk.kode.toString().replace(/[?*/\[\]\\]/g, "") : `MK_${mk.matkulId.substring(0,6)}`;
@@ -492,39 +543,59 @@ export default function MasterData() {
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
     
-    XLSX.writeFile(wb, "DAFTAR MATKUL DI KONVERSI.xlsx");
+    XLSX.writeFile(wb, "DAFTAR_MATKUL_KONVERSI_OBE.xlsx");
   };
 
   const handleDownloadTemplate = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, getPetunjukSheet(), "PETUNJUK");
     
-    const templateData = [
-      ["Kode Mata Kuliah", "MK.001"],
-      ["Nama Mata Kuliah", "Contoh Mata Kuliah"],
+    // Sheet 1: Contoh Wajib
+    const templateWajib = [
+      ["Kode Mata Kuliah", "STY. 501"],
+      ["Nama Mata Kuliah", "Entrepreneurship: Prototyping & Project"],
+      ["Kategori", "Wajib"],
+      ["Konsentrasi", "Semua"],
       ["SKS", 3],
       ["Dosen Pengampu", ""],
       [],
-      ["CPMK 1: Mahasiswa mampu melakukan analisis dasar."],
+      ["CPMK 1: Identifikasi Peluang Inovasi Layanan Bisnis"],
       ["Indikator:"],
-      ["", "1. Mahasiswa mengumpulkan data lapangan."],
-      ["", "2. Mahasiswa menyusun laporan mingguan."],
+      ["", "1. Mengobservasi dan mencatat kelemahan alur kerja harian di divisi penempatan"],
+      ["", "2. Memetakan kebutuhan pelanggan atau mitra instansi yang belum terpenuhi"],
     ];
-    const ws = XLSX.utils.aoa_to_sheet(templateData);
-    ws['!cols'] = [{ wch: 40 }, { wch: 80 }];
-    XLSX.utils.book_append_sheet(wb, ws, "MK.001");
+    const wsWajib = XLSX.utils.aoa_to_sheet(templateWajib);
+    wsWajib['!cols'] = [{ wch: 35 }, { wch: 85 }];
+    XLSX.utils.book_append_sheet(wb, wsWajib, "STY. 501 (Wajib)");
+
+    // Sheet 2: Contoh Konsentrasi
+    const templateKonsentrasi = [
+      ["Kode Mata Kuliah", "MNJ. 504"],
+      ["Nama Mata Kuliah", "Perencanaan SDM Global"],
+      ["Kategori", "Konsentrasi"],
+      ["Konsentrasi", "SDM"],
+      ["SKS", 3],
+      ["Dosen Pengampu", ""],
+      [],
+      ["CPMK 1: Analisis Kebutuhan Tenaga Kerja"],
+      ["Indikator:"],
+      ["", "1. Mengumpulkan data proyeksi beban kerja divisi untuk 3 bulan ke depan"],
+      ["", "2. Membantu penyusunan profil kualifikasi kandidat pada posisi yang dibuka"],
+    ];
+    const wsKonsentrasi = XLSX.utils.aoa_to_sheet(templateKonsentrasi);
+    wsKonsentrasi['!cols'] = [{ wch: 35 }, { wch: 85 }];
+    XLSX.utils.book_append_sheet(wb, wsKonsentrasi, "MNJ. 504 (SDM)");
     
-    XLSX.writeFile(wb, "Template_Kurikulum.xlsx");
+    XLSX.writeFile(wb, "Template_Kurikulum_Konversi_OBE.xlsx");
   };
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
-    const paketId = pakets[0]?._id;
-    if (!paketId) {
+    if (!pakets || pakets.length === 0) {
       e.target.value = null;
-      return showToast("Paket utama tidak ditemukan, silakan buat paket terlebih dahulu!");
+      return showToast("Paket kurikulum tidak ditemukan di database!");
     }
 
     const reader = new FileReader();
@@ -541,10 +612,12 @@ export default function MasterData() {
           const ws = wb.Sheets[sheetName];
           const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
           
-          let kode = sheetName;
+          let kode = sheetName.replace(/\s*\(.*\)/, '').trim();
           let nama = "Mata Kuliah Baru";
-          let sks = 2;
+          let sks = 3;
           let dosen_pengampu = "";
+          let kategori = "wajib";
+          let konsentrasi = "";
           const cpmkList = [];
           
           let currentCpmk = null;
@@ -556,27 +629,31 @@ export default function MasterData() {
             
             if (col1.toLowerCase() === "kode mata kuliah" && col2) kode = col2;
             else if (col1.toLowerCase() === "nama mata kuliah" && col2) nama = col2;
-            else if (col1.toLowerCase() === "sks" && col2) sks = Number(col2) || 2;
+            else if (col1.toLowerCase() === "kategori" && col2) {
+              kategori = col2.toLowerCase().includes("konsentrasi") ? "konsentrasi" : "wajib";
+            }
+            else if (col1.toLowerCase() === "konsentrasi" && col2) {
+              konsentrasi = col2;
+            }
+            else if (col1.toLowerCase() === "sks" && col2) sks = Number(col2) || 3;
             else if (col1.toLowerCase() === "dosen pengampu" && col2) dosen_pengampu = col2;
             else if (col1.toUpperCase().startsWith("CPMK")) {
               currentCpmk = { nama_cpmk: col1, indikator: [] };
               cpmkList.push(currentCpmk);
             }
-            else if (col1.toLowerCase() === "indikator:" || col1.toLowerCase() === "indikator" || col1.toLowerCase() === "indikator :") {
+            else if (col1.toLowerCase().startsWith("indikator")) {
               // Abaikan header indikator
             }
             else if (currentCpmk) {
-              // Ambil teks apapun yang ada di kolom 1 atau kolom 2 setelah CPMK ditemukan (kecuali header)
               let text = col2 || col1;
-              if (text && text.length > 4) {
-                // Bersihkan prefix umum seperti "-> ", "- ", "* ", "1. ", "1) ", dll.
+              if (text && text.length > 3) {
                 text = text.replace(/^(\s*(->|=>|-|\*|\d+[\.\)]|\u2022)\s*)+/g, "").trim();
                 if (text) currentCpmk.indikator.push(text);
               }
             }
           });
           
-          mata_kuliah_list.push({ kode, nama, sks, dosen_pengampu, cpmk: cpmkList });
+          mata_kuliah_list.push({ kode, nama, sks, dosen_pengampu, kategori, konsentrasi, cpmk: cpmkList });
         });
         
         if (mata_kuliah_list.length === 0) {
@@ -589,7 +666,7 @@ export default function MasterData() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'batch_import',
-            paketId,
+            paketId: selectedPaketFilter !== 'all' ? selectedPaketFilter : 'auto',
             mata_kuliah_list
           })
         });
@@ -811,20 +888,64 @@ export default function MasterData() {
                 </div>
               </div>
 
+              {/* Filter Pills Paket & Ringkasan SKS */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/80 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaketFilter("all")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                      selectedPaketFilter === "all"
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    <span>🏢</span> Semua Kurikulum
+                  </button>
+                  {pakets.map(p => {
+                    const isSelected = selectedPaketFilter === p._id || selectedPaketFilter === p.konsentrasi;
+                    const dotColor = p.konsentrasi === 'SDM' ? 'bg-blue-500' : p.konsentrasi === 'Keuangan' ? 'bg-emerald-500' : 'bg-purple-500';
+                    return (
+                      <button
+                        key={p._id}
+                        type="button"
+                        onClick={() => setSelectedPaketFilter(p._id)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                          isSelected
+                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>
+                        <span>Konsentrasi {p.konsentrasi}</span>
+                        <span className="px-1.5 py-0.2 text-[10px] rounded-md bg-slate-100 dark:bg-slate-700 font-semibold opacity-90">
+                          {p.total_sks || 23} SKS
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 px-2">
+                  Menampilkan: <strong className="text-slate-700 dark:text-slate-200 font-bold">{displayedMatkuls.length} Mata Kuliah</strong>
+                  {selectedPaketFilter !== "all" && " (12 SKS Wajib + 11 SKS Konsentrasi)"}
+                </div>
+              </div>
+
               <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm font-bold">
                       <th className="py-4 px-6 w-16 text-center">No</th>
                       <th className="py-4 px-6">Mata Kuliah</th>
+                      <th className="py-4 px-6 w-44 text-center">Kategori</th>
                       <th className="py-4 px-6 w-24 text-center">SKS</th>
-                      <th className="py-4 px-6 w-32 text-center">Jml CPMK</th>
+                      <th className="py-4 px-6 w-28 text-center">Jml CPMK</th>
                       <th className="py-4 px-6 text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                     {allMatkuls.length === 0 ? (
-                      <tr><td colSpan="5" className="py-8 text-center text-slate-500 dark:text-slate-400">Belum ada data mata kuliah.</td></tr>
+                      <tr><td colSpan="6" className="py-8 text-center text-slate-500 dark:text-slate-400">Belum ada data mata kuliah.</td></tr>
                     ) : (
                       allMatkuls.map((mk, index) => (
                         <React.Fragment key={mk.matkulId}>
@@ -840,6 +961,17 @@ export default function MasterData() {
                                 <span className="font-bold text-slate-800 dark:text-slate-100">{mk.nama}</span>
                                 <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">{mk.kode}</span>
                               </div>
+                            </td>
+                            <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
+                              {mk.kategori === 'wajib' ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Wajib (Umum)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span> {mk.konsentrasi ? `Konsentrasi ${mk.konsentrasi}` : 'Konsentrasi'}
+                                </span>
+                              )}
                             </td>
                             <td className="py-4 px-6 text-center font-bold text-indigo-600 dark:text-indigo-400">
                               {mk.sks} SKS
@@ -858,6 +990,8 @@ export default function MasterData() {
                                       kode: mk.kode || "", 
                                       nama: mk.nama, 
                                       sks: mk.sks,
+                                      kategori: mk.kategori || "wajib",
+                                      targetPaketId: mk.paketId,
                                       cpmk: mk.cpmk ? JSON.parse(JSON.stringify(mk.cpmk)) : []
                                     }); 
                                     setShowEditMatkulModal(true); 
@@ -867,7 +1001,7 @@ export default function MasterData() {
                                   Edit Matkul
                                 </button>
                                 <button 
-                                  onClick={() => handleDeleteMatkul(mk.paketId, mk.matkulId)}
+                                  onClick={() => handleDeleteMatkul(mk.paketId, mk.matkulId, mk.kode)}
                                   className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-lg transition-colors"
                                 >
                                   Hapus
@@ -888,7 +1022,7 @@ export default function MasterData() {
                           {/* Accordion Content for CPMK */}
                           {expandedMatkulId === mk.matkulId && (
                             <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t-0">
-                              <td colSpan="5" className="p-0">
+                              <td colSpan="6" className="p-0">
                                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2 fade-in duration-200">
                                   <div className="flex justify-between items-center mb-4">
                                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
@@ -1067,17 +1201,51 @@ export default function MasterData() {
       {/* Modal Tambah Matakuliah */}
       {showAddMatkulModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-slate-300 dark:border-slate-600 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Tambah Mata Kuliah</h3>
-              <button onClick={() => { setShowAddMatkulModal(false); setMatkulForm({ kode: "", nama: "", sks: 3 }); }} className="text-slate-500 dark:text-slate-400 hover:text-red-500 font-bold text-xl">&times;</button>
+              <button onClick={() => { setShowAddMatkulModal(false); setMatkulForm({ kode: "", nama: "", sks: 3, kategori: "wajib", targetPaketId: "all" }); }} className="text-slate-500 dark:text-slate-400 hover:text-red-500 font-bold text-xl">&times;</button>
             </div>
             <form onSubmit={handleMatkulSubmit}>
               <div className="p-6 space-y-4">
                 <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Target Paket</label>
+                    <select
+                      value={matkulForm.targetPaketId || "all"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMatkulForm(prev => ({
+                          ...prev,
+                          targetPaketId: val,
+                          kategori: val === "all" ? "wajib" : prev.kategori
+                        }));
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="all">Semua Paket (Mata Kuliah Wajib)</option>
+                      {pakets.map(p => (
+                        <option key={p._id} value={p._id}>{p.nama_paket}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-1/2">
+                    <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Kategori</label>
+                    <select
+                      value={matkulForm.kategori || "wajib"}
+                      onChange={(e) => setMatkulForm(prev => ({ ...prev, kategori: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="wajib">Wajib (Umum)</option>
+                      <option value="konsentrasi">Konsentrasi Khusus</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
                   <div className="w-1/3">
                     <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Kode</label>
-                    <input required value={matkulForm.kode} onChange={(e) => setMatkulForm({...matkulForm, kode: e.target.value})} type="text" placeholder="MK.001" className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-800/80" />
+                    <input required value={matkulForm.kode} onChange={(e) => setMatkulForm({...matkulForm, kode: e.target.value})} type="text" placeholder="STY. 501" className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-800/80" />
                   </div>
                   <div className="w-2/3">
                     <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">SKS</label>
@@ -1086,12 +1254,12 @@ export default function MasterData() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Nama Mata Kuliah</label>
-                  <input required value={matkulForm.nama} onChange={(e) => setMatkulForm({...matkulForm, nama: e.target.value})} type="text" placeholder="Contoh: Manajemen Bisnis" className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-800/80" />
+                  <input required value={matkulForm.nama} onChange={(e) => setMatkulForm({...matkulForm, nama: e.target.value})} type="text" placeholder="Contoh: Entrepreneurship: Prototyping & Project" className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-800/80" />
                 </div>
               </div>
               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-300 dark:border-slate-600 flex justify-end gap-3">
-                <button type="button" onClick={() => { setShowAddMatkulModal(false); setMatkulForm({ kode: "", nama: "", sks: 3 }); }} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
-                <button type="submit" className="px-5 py-2.5 text-sm font-bold text-slate-800 dark:text-slate-100 bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-colors">Simpan Matkul</button>
+                <button type="button" onClick={() => { setShowAddMatkulModal(false); setMatkulForm({ kode: "", nama: "", sks: 3, kategori: "wajib", targetPaketId: "all" }); }} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                <button type="submit" className="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-colors">Simpan Matkul</button>
               </div>
             </form>
           </div>
@@ -1117,17 +1285,28 @@ export default function MasterData() {
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Informasi Dasar</h4>
                   <div className="flex gap-4">
-                    <div className="w-1/4">
+                    <div className="w-1/5">
                       <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Kode</label>
-                      <input required value={matkulForm.kode} onChange={(e) => setMatkulForm({...matkulForm, kode: e.target.value})} type="text" className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800" />
+                      <input required value={matkulForm.kode} onChange={(e) => setMatkulForm({...matkulForm, kode: e.target.value})} type="text" className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800 font-semibold" />
+                    </div>
+                    <div className="w-1/5">
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">SKS</label>
+                      <input required value={matkulForm.sks} onChange={(e) => setMatkulForm({...matkulForm, sks: e.target.value})} type="number" min="1" max="6" className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800 font-semibold" />
                     </div>
                     <div className="w-1/4">
-                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">SKS</label>
-                      <input required value={matkulForm.sks} onChange={(e) => setMatkulForm({...matkulForm, sks: e.target.value})} type="number" min="1" max="6" className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800" />
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Kategori</label>
+                      <select
+                        value={matkulForm.kategori || "wajib"}
+                        onChange={(e) => setMatkulForm({...matkulForm, kategori: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800 font-semibold text-slate-800 dark:text-slate-100"
+                      >
+                        <option value="wajib">Wajib (Umum)</option>
+                        <option value="konsentrasi">Konsentrasi</option>
+                      </select>
                     </div>
-                    <div className="w-2/4">
+                    <div className="w-2/5">
                       <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nama Mata Kuliah</label>
-                      <input required value={matkulForm.nama} onChange={(e) => setMatkulForm({...matkulForm, nama: e.target.value})} type="text" className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800" />
+                      <input required value={matkulForm.nama} onChange={(e) => setMatkulForm({...matkulForm, nama: e.target.value})} type="text" className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800 font-semibold" />
                     </div>
                   </div>
                 </div>

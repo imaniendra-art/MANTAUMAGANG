@@ -63,7 +63,10 @@ export async function POST(req) {
       const mhsData = await User.findById(payload.mahasiswa_id).select('konsentrasi program_studi');
       if (mhsData?.konsentrasi) {
         const matchedPaket = await PaketMatkul.findOne({
-          nama_paket: { $regex: new RegExp(mhsData.konsentrasi, 'i') },
+          $or: [
+            { konsentrasi: mhsData.konsentrasi },
+            { nama_paket: { $regex: new RegExp(mhsData.konsentrasi, 'i') } }
+          ],
           jenis_skema: 'instansi'
         });
         if (matchedPaket) paket_matkul_id = matchedPaket._id;

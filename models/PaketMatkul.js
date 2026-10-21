@@ -11,6 +11,11 @@ const MatkulSchema = new mongoose.Schema({
   nama: { type: String, required: true },
   sks: { type: Number, required: true },
   dosen_pengampu: { type: String, default: "" },
+  kategori: {
+    type: String,
+    enum: ['wajib', 'konsentrasi'],
+    default: 'wajib'
+  },
   cpmk: [CpmkSchema],
 });
 
@@ -18,6 +23,15 @@ const PaketMatkulSchema = new mongoose.Schema({
   nama_paket: {
     type: String,
     required: [true, 'Nama paket wajib diisi'],
+  },
+  konsentrasi: {
+    type: String,
+    enum: ['Semua', 'SDM', 'Keuangan', 'Pemasaran'],
+    default: 'Semua',
+  },
+  total_sks: {
+    type: Number,
+    default: 23,
   },
   jenis_skema: {
     type: String,
