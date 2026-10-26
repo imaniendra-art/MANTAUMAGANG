@@ -88,7 +88,7 @@ export const authOptions = {
         ];
 
         // Dukungan alias username cepat untuk pengujian (prioritaskan akun demo resmi)
-        if (lower === 'admin' || lower === 'admin_prodi') {
+        if (lower === 'admin' || lower === 'admin_prodi' || lower === 'superadmin' || lower === 'super_admin') {
           orConditions.unshift({ email: 'admin@stimi.ac.id' }, { email: 'admin@mantaumagang.com' });
         } else if (lower === 'dpl') {
           orConditions.unshift({ email: 'dpl@stimi.ac.id' });

@@ -10,7 +10,7 @@ export async function POST(req) {
   await connectToDatabase();
   try {
     const session = await getServerSession(authOptions);
-    const isAdmin = session && ['admin', 'admin_prodi'].includes(session.user.role);
+    const isAdmin = session && ['admin', 'admin_prodi', 'super_admin'].includes(session.user.role);
     if (!isAdmin) {
       return NextResponse.json({ error: "Hanya Admin yang memiliki otorisasi untuk melakukan impersonasi." }, { status: 403 });
     }

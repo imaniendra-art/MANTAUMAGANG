@@ -10,8 +10,10 @@ export default withAuth(
       return NextResponse.redirect(new URL('/login', req.url));
     }
 
+    const isAdmin = ['admin_prodi', 'super_admin', 'admin'].includes(token.role);
+
     if (path.startsWith('/mahasiswa') && token.role !== 'mahasiswa') {
-      if ((token.role === 'dpl' || token.role === 'admin_prodi') && (path.startsWith('/mahasiswa/laporan/cetak') || path.startsWith('/mahasiswa/laporan/templates'))) {
+      if ((token.role === 'dpl' || isAdmin) && (path.startsWith('/mahasiswa/laporan/cetak') || path.startsWith('/mahasiswa/laporan/templates'))) {
         // allow DPL and Admin to view print & template pages
       } else {
         return NextResponse.redirect(new URL('/login', req.url));
@@ -37,7 +39,7 @@ export default withAuth(
       return NextResponse.redirect(new URL('/login', req.url));
     }
 
-    if (path.startsWith('/admin') && token.role !== 'admin_prodi') {
+    if (path.startsWith('/admin') && !isAdmin) {
       return NextResponse.redirect(new URL('/login', req.url));
     }
 

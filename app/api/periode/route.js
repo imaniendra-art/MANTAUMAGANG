@@ -18,7 +18,7 @@ export async function POST(req) {
   await dbConnect();
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !['admin', 'admin_prodi'].includes(session.user.role)) {
+    if (!session || !['admin', 'admin_prodi', 'super_admin'].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -51,7 +51,7 @@ export async function PATCH(req) {
   await dbConnect();
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !['admin', 'admin_prodi'].includes(session.user.role)) {
+    if (!session || !['admin', 'admin_prodi', 'super_admin'].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -97,7 +97,7 @@ export async function DELETE(req) {
   await dbConnect();
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !['admin', 'admin_prodi'].includes(session.user.role)) {
+    if (!session || !['admin', 'admin_prodi', 'super_admin'].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

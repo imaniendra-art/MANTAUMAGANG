@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
+import connectToDatabase from '@/lib/db';
 import LaporanAkhir from '@/models/LaporanAkhir';
 import User from '@/models/User';
 import PengajuanMagang from '@/models/PengajuanMagang';
 
-// Ensure DB is connected
-const MONGODB_URI = process.env.MONGODB_URI;
-if (!mongoose.connection.readyState) {
-  mongoose.connect(MONGODB_URI);
-}
-
 export async function GET(request, { params }) {
+  await connectToDatabase();
   try {
     const { id } = params;
 
